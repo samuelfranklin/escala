@@ -2,10 +2,8 @@
 import tkinter as tk
 from tkinter import messagebox, ttk
 
-from sqlalchemy.exc import IntegrityError
-
-from infra.database import Event, EventSquad, Squad, session_scope
-from utils import EventoDialog, center_popup
+from services.eventos_service import EventosService
+from utils import EventoDialog
 
 # ── Paleta (espelha main_window.py) ──────────────────────────────────
 _BG = "#1e2533"
@@ -26,6 +24,7 @@ _HDR_COL = "#e8ecf5"
 class EventosFrame(ttk.Frame):
     def __init__(self, parent):
         super().__init__(parent)
+        self.service = EventosService()
         self._setup_styles()
         self._build_ui()
         self.atualizar_lista()
@@ -132,9 +131,8 @@ class EventosFrame(ttk.Frame):
         for item in self.tree.get_children():
             self.tree.delete(item)
 
-        with session_scope() as session:
-            events = session.query(Event).order_by(Event.name).all()
-
+        try:
+            events = self.service.list_all_events()
             self._evento_data = {}
             for idx, event in enumerate(events):
                 tag = "odd" if idx % 2 == 0 else "even"
@@ -145,40 +143,41 @@ class EventosFrame(ttk.Frame):
                                 tags=(tag,))
                 self._evento_data[event.id] = (event.name, event.type, data_dia, event.time)
 
-        total = len(self.tree.get_children())
-        self._lbl_count.config(text=f"({total} evento{'s' if total != 1 else ''})")
+            total = len(self.tree.get_children())
+            self._lbl_count.config(text=f"({total} evento{'s' if total != 1 else ''})")
+        except Exception as e:
+            messagebox.showerror("Erro ao carregar", str(e))
 
     def adicionar(self) -> None:
         dlg = EventoDialog(self, "Novo Evento")
-        center_popup(dlg.dialog)
+        self.wait_window(dlg)
         if not dlg.result:
             return
 
         nome, tipo, dia, data, horario, desc = dlg.result
         try:
-            with session_scope() as session:
-                event = Event(name=nome,
-                             type=tipo,
-                             date=data if tipo != "fixo" else None,
-                             day_of_week=dia if tipo == "fixo" else None,
-                             time=horario,
-                             details=desc)
-                session.add(event)
-                session.flush()
-
-                # Criar configurações padrão para todas as squads
-                squads = session.query(Squad).all()
-                for squad in squads:
-                    session.add(EventSquad(event_id=event.id,
-                                          squad_id=squad.id,
-                                          quantity=0,
-                                          level=2))
-        except IntegrityError:
-            messagebox.showerror("Erro", "Erro ao adicionar evento.")
-            return
-
-        messagebox.showinfo("Sucesso", f"Evento '{nome}' adicionado.")
-        self.atualizar_lista()
+            day_of_week = dia if tipo == "fixo" else None
+            date_arg = data if tipo != "fixo" else None
+            
+            success, message, event = self.service.create_event(
+                name=nome,
+                event_type=tipo,
+                time=horario,
+                day_of_week=day_of_week,
+                date=date_arg,
+                details=desc
+            )
+            
+            if not success:
+                messagebox.showerror("Erro", message)
+                return
+            
+            messagebox.showinfo("Sucesso", message)
+            self.atualizar_lista()
+        except ValueError as e:
+            messagebox.showerror("Erro", str(e))
+        except Exception as e:
+            messagebox.showerror("Erro ao adicionar evento", str(e))
 
     def editar(self) -> None:
         sel = self.tree.selection()
@@ -187,8 +186,8 @@ class EventosFrame(ttk.Frame):
             return
 
         event_id = sel[0]
-        with session_scope() as session:
-            event = session.query(Event).filter(Event.id == event_id).first()
+        try:
+            event = self.service.get_event_by_id(event_id)
             if not event:
                 messagebox.showwarning("Aviso", "Evento não encontrado.")
                 return
@@ -201,20 +200,32 @@ class EventosFrame(ttk.Frame):
                              data=event.date or "",
                              horario=event.time or "",
                              descricao=event.details or "")
-            center_popup(dlg.dialog)
+            self.wait_window(dlg)
             if not dlg.result:
                 return
 
             novo_nome, novo_tipo, novo_dia, nova_data, novo_horario, nova_desc = dlg.result
-            event.name = novo_nome
-            event.type = novo_tipo
-            event.date = nova_data if novo_tipo != "fixo" else None
-            event.day_of_week = novo_dia if novo_tipo == "fixo" else None
-            event.time = novo_horario
-            event.details = nova_desc
-
-        messagebox.showinfo("Sucesso", "Evento atualizado.")
-        self.atualizar_lista()
+            
+            success, message, updated_event = self.service.update_event(
+                event_id=event_id,
+                name=novo_nome,
+                event_type=novo_tipo,
+                time=novo_horario,
+                day_of_week=novo_dia if novo_tipo == "fixo" else None,
+                date=nova_data if novo_tipo != "fixo" else None,
+                details=nova_desc
+            )
+            
+            if not success:
+                messagebox.showerror("Erro", message)
+                return
+            
+            messagebox.showinfo("Sucesso", message)
+            self.atualizar_lista()
+        except ValueError as e:
+            messagebox.showerror("Erro", str(e))
+        except Exception as e:
+            messagebox.showerror("Erro ao editar evento", str(e))
 
     def remover(self) -> None:
         sel = self.tree.selection()
@@ -226,10 +237,14 @@ class EventosFrame(ttk.Frame):
         if not messagebox.askyesno("Confirmar", f"Remover evento '{nome}'?"):
             return
 
-        with session_scope() as session:
-            event = session.query(Event).filter(Event.id == event_id).first()
-            if event:
-                session.delete(event)
-
-        messagebox.showinfo("Sucesso", "Evento removido.")
-        self.atualizar_lista()
+        try:
+            success, message = self.service.delete_event(event_id)
+            
+            if not success:
+                messagebox.showerror("Erro", message)
+                return
+            
+            messagebox.showinfo("Sucesso", message)
+            self.atualizar_lista()
+        except Exception as e:
+            messagebox.showerror("Erro ao remover evento", str(e))

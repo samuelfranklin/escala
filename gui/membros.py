@@ -2,7 +2,8 @@
 import tkinter as tk
 from tkinter import messagebox, ttk
 
-from infra.database import Member, MemberSquad, Squad, session_scope
+from infra.database import Member, MemberSquad
+from services.membros_service import MembrosService
 from utils import MembroDialog, center_popup
 
 # ── Paleta (espelha main_window.py) ──────────────────────────────────
@@ -28,6 +29,7 @@ class MembrosFrame(ttk.Frame):
     def __init__(self, parent, db=None):
         super().__init__(parent)
         self.db = db  # Não é usado em ORM, apenas para compatibilidade
+        self.service = MembrosService()  # Service para operações de membro
         self.patentes = ["Líder", "Treinador", "Membro", "Recruta"]
         self.squads_widgets: dict[str, tuple[tk.BooleanVar, tk.StringVar]] = {}
         self._membro_selecionado: str | None = None
@@ -362,8 +364,8 @@ class MembrosFrame(ttk.Frame):
         for item in self.tree_membros.get_children():
             self.tree_membros.delete(item)
 
-        with session_scope() as session:
-            members = session.query(Member).order_by(Member.name).all()
+        try:
+            members = self.service.get_all_members()
 
             for idx, member in enumerate(members):
                 # Carregar times deste membro
@@ -381,6 +383,8 @@ class MembrosFrame(ttk.Frame):
 
             total = len(members)
             self._lbl_count.config(text=f"({total} membro{'s' if total != 1 else ''})")
+        except Exception as e:
+            messagebox.showerror("Erro ao carregar membros", str(e))
 
         self._show_placeholder()
         self._lbl_nome.config(text="")
@@ -398,11 +402,14 @@ class MembrosFrame(ttk.Frame):
         membro_id = sel[0]
         self._membro_selecionado = membro_id
 
-        with session_scope() as session:
-            member = session.query(Member).filter_by(id=membro_id).first()
+        try:
+            member = self.service.get_member_by_id(membro_id)
             if not member:
                 return
             nome = member.name
+        except Exception as e:
+            messagebox.showerror("Erro ao buscar membro", str(e))
+            return
 
         self._lbl_nome.config(text=nome)
 
@@ -410,9 +417,9 @@ class MembrosFrame(ttk.Frame):
             w.destroy()
         self.squads_widgets = {}
 
-        with session_scope() as session:
+        try:
             # Todos os times disponíveis
-            todos = session.query(Squad).order_by(Squad.nome).all()
+            todos = self.service.get_all_squads()
 
             if not todos:
                 tk.Label(
@@ -427,8 +434,15 @@ class MembrosFrame(ttk.Frame):
                 return
 
             # Times em que o membro já está
-            member = session.query(Member).filter_by(id=membro_id).first()
-            enrolled_dict = {ms.squad_id: ms.level for ms in member.memberships}
+            try:
+                member = self.service.get_member_by_id(membro_id)
+                if member:
+                    enrolled_dict = {ms.squad_id: ms.level for ms in member.memberships}
+                else:
+                    enrolled_dict = {}
+            except Exception as e:
+                messagebox.showerror("Erro ao buscar times do membro", str(e))
+                enrolled_dict = {}
 
             matriculados = [(s.id, s.nome) for s in todos if s.id in enrolled_dict]
             disponiveis = [(s.id, s.nome) for s in todos if s.id not in enrolled_dict]
@@ -456,6 +470,8 @@ class MembrosFrame(ttk.Frame):
                 )
                 for i, (sid, sn) in enumerate(disponiveis):
                     self._squad_row(sid, sn, self.patentes[-1], False, i)
+        except Exception as e:
+            messagebox.showerror("Erro ao carregar times", str(e))
 
     # ------------------------------------------------------------------
     # CRUD — Membros via ORM
@@ -467,16 +483,19 @@ class MembrosFrame(ttk.Frame):
             return
 
         nome, email, telefone, patente, data_entrada, obs = dlg.result
-        with session_scope() as session:
-            member = Member(
+        try:
+            self.service.create_member(
                 name=nome,
                 email=email or None,
                 phone_number=telefone or None,
-                status=True,
+                instagram=None,
             )
-            session.add(member)
-            session.commit()
-        self.atualizar_lista()
+            messagebox.showinfo("Sucesso", "Membro adicionado com sucesso!")
+            self.atualizar_lista()
+        except ValueError as e:
+            messagebox.showerror("Erro ao adicionar membro", str(e))
+        except Exception as e:
+            messagebox.showerror("Erro", f"Erro inesperado: {str(e)}")
 
     def editar(self) -> None:
         sel = self.tree_membros.selection()
@@ -486,8 +505,8 @@ class MembrosFrame(ttk.Frame):
 
         membro_id = sel[0]
 
-        with session_scope() as session:
-            member = session.query(Member).filter_by(id=membro_id).first()
+        try:
+            member = self.service.get_member_by_id(membro_id)
             if not member:
                 messagebox.showwarning("Aviso", "Membro não encontrado.")
                 return
@@ -503,19 +522,28 @@ class MembrosFrame(ttk.Frame):
                 obs="",
                 edicao=True,
             )
+        except Exception as e:
+            messagebox.showerror("Erro ao buscar membro", str(e))
+            return
 
         if not dlg.result:
             return
 
         nome, email, telefone, patente, data_entrada, obs = dlg.result
-        with session_scope() as session:
-            member = session.query(Member).filter_by(id=membro_id).first()
-            if member:
-                member.name = nome
-                member.email = email or None
-                member.phone_number = telefone or None
-                session.commit()
-        self.atualizar_lista()
+        try:
+            self.service.update_member(
+                member_id=membro_id,
+                name=nome,
+                email=email or None,
+                phone_number=telefone or None,
+                instagram=None,
+            )
+            messagebox.showinfo("Sucesso", "Membro atualizado com sucesso!")
+            self.atualizar_lista()
+        except ValueError as e:
+            messagebox.showerror("Erro ao atualizar membro", str(e))
+        except Exception as e:
+            messagebox.showerror("Erro", f"Erro inesperado: {str(e)}")
 
     def remover(self) -> None:
         sel = self.tree_membros.selection()
@@ -525,21 +553,27 @@ class MembrosFrame(ttk.Frame):
 
         membro_id = sel[0]
 
-        with session_scope() as session:
-            member = session.query(Member).filter_by(id=membro_id).first()
+        try:
+            member = self.service.get_member_by_id(membro_id)
             if not member:
                 return
             nome = member.name
+        except Exception as e:
+            messagebox.showerror("Erro ao buscar membro", str(e))
+            return
 
         if not messagebox.askyesno("Confirmar", f"Remover membro '{nome}'?"):
             return
 
-        with session_scope() as session:
-            member = session.query(Member).filter_by(id=membro_id).first()
-            if member:
-                session.delete(member)
-                session.commit()
-        self.atualizar_lista()
+        try:
+            success = self.service.delete_member(membro_id)
+            if success:
+                messagebox.showinfo("Sucesso", "Membro removido com sucesso!")
+                self.atualizar_lista()
+            else:
+                messagebox.showerror("Erro", "Falha ao remover membro.")
+        except Exception as e:
+            messagebox.showerror("Erro ao remover membro", str(e))
 
     # ------------------------------------------------------------------
     # Salvar vínculo membro ↔ times
@@ -555,31 +589,52 @@ class MembrosFrame(ttk.Frame):
 
         membro_id = self._membro_selecionado
 
-        with session_scope() as session:
-            member = session.query(Member).filter_by(id=membro_id).first()
+        try:
+            # Buscar membro e seus squads atuais
+            member = self.service.get_member_by_id(membro_id)
             if not member:
+                messagebox.showerror("Erro", "Membro não encontrado.")
                 return
 
-            # Limpar todas as associações atuais
-            for ms in member.memberships:
-                session.delete(ms)
-
-            # Adicionar novas associações baseado no widget
+            current_squads = {ms.squad_id for ms in member.memberships}
+            
+            # Processar cada squad widget
+            errors = []
             for squad_id, (var_check, var_patente) in self.squads_widgets.items():
-                if var_check.get():
-                    try:
-                        level = int(var_patente.get())
-                    except (ValueError, TypeError):
-                        level = 1
-                    new_ms = MemberSquad(
-                        member_id=member.id,
+                is_checked = var_check.get()
+                try:
+                    patente_str = var_patente.get()
+                    level = int(patente_str)
+                except (ValueError, TypeError):
+                    level = 1
+                
+                # Se selecionado e ainda não está no squad
+                if is_checked and squad_id not in current_squads:
+                    result = self.service.assign_member_to_squad(
+                        member_id=membro_id,
                         squad_id=squad_id,
-                        level=level,
+                        level=level
                     )
-                    session.add(new_ms)
-
-            session.commit()
-
-        self.atualizar_lista()
-        self.tree_membros.selection_set(membro_id)
-        self._on_select()
+                    if result is None:
+                        errors.append(f"Erro ao adicionar {squad_id}")
+                
+                # Se não selecionado e está no squad
+                elif not is_checked and squad_id in current_squads:
+                    success = self.service.remove_member_from_squad(
+                        member_id=membro_id,
+                        squad_id=squad_id
+                    )
+                    if not success:
+                        errors.append(f"Erro ao remover {squad_id}")
+            
+            if errors:
+                messagebox.showwarning("Aviso", f"Erros ao salvar:\n" + "\n".join(errors))
+            else:
+                messagebox.showinfo("Sucesso", "Times salvos com sucesso!")
+            
+            self.atualizar_lista()
+            self.tree_membros.selection_set(membro_id)
+            self._on_select()
+        
+        except Exception as e:
+            messagebox.showerror("Erro ao salvar times", str(e))

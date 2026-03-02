@@ -3,7 +3,7 @@ import tkinter as tk
 from collections import defaultdict
 from tkinter import filedialog, messagebox, ttk
 
-from infra.database import session_scope
+from services.visualizar_service import VisualizarService
 
 
 class VisualizarFrame(tk.Frame):
@@ -22,6 +22,7 @@ class VisualizarFrame(tk.Frame):
 
     def __init__(self, parent):
         super().__init__(parent, bg=self._BG)
+        self.service = VisualizarService()  # Injetar service
         self.escala_atual = []  # armazena a última escala gerada
         self._build_widgets()
 
@@ -174,9 +175,40 @@ class VisualizarFrame(tk.Frame):
             )
 
     def atualizar_lista(self):
-        """Callback acionado por sincronização (compatível com pattern de app.py)."""
-        # Aqui você pode recarregar a escala do banco se necessário
-        pass
+        """Callback acionado por sincronização: carrega escala do banco."""
+        import datetime
+        
+        try:
+            hoje = datetime.date.today()
+            schedule = self.service.get_schedule_for_period(hoje.month, hoje.year)
+            # Converte dados do service para formato esperado (com 'membro')
+            for item in schedule:
+                item.setdefault('membro', '')  # Placeholder se não houver membro
+            self.set_escala(schedule)
+        except Exception as e:
+            messagebox.showerror("Erro ao carregar escala", str(e))
+
+    def filtrar_por_squad(self, squad_id: str):
+        """Filtra e carrega alocações de um squad específico."""
+        try:
+            allocations = self.service.get_squad_allocations(squad_id)
+            # Converte para formato esperado
+            for item in allocations:
+                item.setdefault('membro', '')
+            self.set_escala(allocations)
+        except Exception as e:
+            messagebox.showerror("Erro ao filtrar por squad", str(e))
+
+    def filtrar_por_membro(self, member_id: str):
+        """Filtra e carrega alocações de um membro específico."""
+        try:
+            allocations = self.service.get_member_allocations(member_id)
+            # Converte para formato esperado
+            for item in allocations:
+                item.setdefault('squad', '')
+            self.set_escala(allocations)
+        except Exception as e:
+            messagebox.showerror("Erro ao filtrar por membro", str(e))
 
     def limpar(self):
         """Limpa a treeview e dados da escala."""
@@ -197,38 +229,41 @@ class VisualizarFrame(tk.Frame):
         if not arquivo:
             return
 
-        with open(arquivo, "w", encoding="utf-8") as f:
-            f.write("ESCALA DO TIME DA MÍDIA\n")
-            f.write("=" * 60 + "\n\n")
+        try:
+            with open(arquivo, "w", encoding="utf-8") as f:
+                f.write("ESCALA DO TIME DA MÍDIA\n")
+                f.write("=" * 60 + "\n\n")
 
-            # Agrupar por data
-            por_data = defaultdict(list)
-            for item in self.escala_atual:
-                por_data[item["data"]].append(item)
+                # Agrupar por data
+                por_data = defaultdict(list)
+                for item in self.escala_atual:
+                    por_data[item["data"]].append(item)
 
-            for data in sorted(por_data.keys()):
-                f.write(f"\n{data} - {por_data[data][0]['dia']}\n")
-                f.write("-" * 40 + "\n")
+                for data in sorted(por_data.keys()):
+                    f.write(f"\n{data} - {por_data[data][0]['dia']}\n")
+                    f.write("-" * 40 + "\n")
 
-                # Agrupar por evento
-                por_evento = defaultdict(list)
-                for item in por_data[data]:
-                    por_evento[item["evento"]].append(item)
+                    # Agrupar por evento
+                    por_evento = defaultdict(list)
+                    for item in por_data[data]:
+                        por_evento[item["evento"]].append(item)
 
-                for evento, itens_evento in por_evento.items():
-                    f.write(f"\n  Evento: {evento} ({itens_evento[0]['horario']})\n")
+                    for evento, itens_evento in por_evento.items():
+                        f.write(f"\n  Evento: {evento} ({itens_evento[0]['horario']})\n")
 
-                    # Agrupar por squad
-                    por_squad = defaultdict(list)
-                    for item in itens_evento:
-                        por_squad[item["squad"]].append(item["membro"])
+                        # Agrupar por squad
+                        por_squad = defaultdict(list)
+                        for item in itens_evento:
+                            por_squad[item["squad"]].append(item.get("membro", ""))
 
-                    for squad, membros in por_squad.items():
-                        f.write(f"    {squad}:\n")
-                        for membro in membros:
-                            f.write(f"      • {membro}\n")
+                        for squad, membros in por_squad.items():
+                            f.write(f"    {squad}:\n")
+                            for membro in membros:
+                                f.write(f"      • {membro}\n")
 
-        messagebox.showinfo("Exportação", f"Escala exportada para {arquivo}")
+            messagebox.showinfo("Exportação", f"Escala exportada para {arquivo}")
+        except IOError as e:
+            messagebox.showerror("Erro de exportação", f"Não foi possível salvar o arquivo: {str(e)}")
 
     def exportar_csv(self):
         """Exporta escala em formato CSV."""
@@ -242,19 +277,22 @@ class VisualizarFrame(tk.Frame):
         if not arquivo:
             return
 
-        with open(arquivo, "w", encoding="utf-8", newline="") as f:
-            writer = csv.writer(f, delimiter=";")
-            writer.writerow(["Data", "Dia", "Evento", "Horário", "Squad", "Voluntário"])
-            for item in self.escala_atual:
-                writer.writerow(
-                    [
-                        item["data"],
-                        item["dia"],
-                        item["evento"],
-                        item["horario"],
-                        item["squad"],
-                        item["membro"],
-                    ]
-                )
+        try:
+            with open(arquivo, "w", encoding="utf-8", newline="") as f:
+                writer = csv.writer(f, delimiter=";")
+                writer.writerow(["Data", "Dia", "Evento", "Horário", "Squad", "Voluntário"])
+                for item in self.escala_atual:
+                    writer.writerow(
+                        [
+                            item.get("data", ""),
+                            item.get("dia", ""),
+                            item.get("evento", ""),
+                            item.get("horario", ""),
+                            item.get("squad", ""),
+                            item.get("membro", ""),
+                        ]
+                    )
 
-        messagebox.showinfo("Exportação", f"Escala exportada para {arquivo}")
+            messagebox.showinfo("Exportação", f"Escala exportada para {arquivo}")
+        except IOError as e:
+            messagebox.showerror("Erro de exportação", f"Não foi possível salvar o arquivo: {str(e)}")

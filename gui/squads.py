@@ -2,9 +2,7 @@
 import tkinter as tk
 from tkinter import messagebox, ttk
 
-from sqlalchemy.exc import IntegrityError
-
-from infra.database import Member, MemberSquad, Squad, session_scope
+from services.squads_service import SquadsService
 from utils import SquadDialog
 
 # ── Paleta (espelha main_window.py) ──────────────────────────────────
@@ -33,6 +31,7 @@ _LEVEL_TO_PATENTE = {v: k for k, v in _PATENTE_TO_LEVEL.items()}
 class SquadsFrame(ttk.Frame):
     def __init__(self, parent):
         super().__init__(parent)
+        self.service = SquadsService()
         self.patentes = ["Líder", "Treinador", "Membro", "Recruta"]
         self.membros_widgets: dict[str, tuple[tk.BooleanVar, tk.StringVar]] = {}
         self._squad_selecionado: str | None = None
@@ -325,14 +324,16 @@ class SquadsFrame(ttk.Frame):
         for item in self.tree_squads.get_children():
             self.tree_squads.delete(item)
 
-        with session_scope() as session:
-            squads = session.query(Squad).order_by(Squad.nome).all()
-
+        try:
+            squads = self.service.get_all_squads()
             for idx, squad in enumerate(squads):
                 tag = "odd" if idx % 2 == 0 else "even"
                 self.tree_squads.insert(
-                    "", "end", iid=squad.id, values=(squad.nome, ""), tags=(tag,)
+                    "", "end", iid=squad["id"], values=(squad["nome"], ""), tags=(tag,)
                 )
+        except Exception as e:
+            messagebox.showerror("Erro ao carregar times", str(e))
+            return
 
         total = len(self.tree_squads.get_children())
         self._lbl_count.config(text=f"({total} time{'s' if total != 1 else ''})")
@@ -354,53 +355,49 @@ class SquadsFrame(ttk.Frame):
             w.destroy()
         self.membros_widgets = {}
 
-        with session_scope() as session:
-            todos = session.query(Member).order_by(Member.name).all()
-            enrolled_rows = (
-                session.query(MemberSquad)
-                .filter(MemberSquad.squad_id == squad_id)
-                .all()
-            )
-            enrolled = {
-                row.member_id: _LEVEL_TO_PATENTE.get(row.level, "Membro")
-                for row in enrolled_rows
-            }
+        try:
+            # Get all members and squad members using service
+            todos = self.service.get_all_members()
+            squad_members = self.service.get_squad_members(squad_id)
+            enrolled = {m["member_id"]: _LEVEL_TO_PATENTE.get(m["level"], "Membro") for m in squad_members}
 
-        if not todos:
-            tk.Label(
-                self._inner,
-                text="Nenhum membro cadastrado.\nAdicione membros na aba Membros.",
-                font=("Segoe UI", 10),
-                bg=_BG_CARD,
-                fg=_FG_MUTED,
-                justify="center",
-                pady=30,
-            ).pack(fill="x")
-            return
+            if not todos:
+                tk.Label(
+                    self._inner,
+                    text="Nenhum membro cadastrado.\nAdicione membros na aba Membros.",
+                    font=("Segoe UI", 10),
+                    bg=_BG_CARD,
+                    fg=_FG_MUTED,
+                    justify="center",
+                    pady=30,
+                ).pack(fill="x")
+                return
 
-        matriculados = [(m.id, m.name) for m in todos if m.id in enrolled]
-        disponiveis = [(m.id, m.name) for m in todos if m.id not in enrolled]
+            matriculados = [(m["id"], m["name"]) for m in todos if m["id"] in enrolled]
+            disponiveis = [(m["id"], m["name"]) for m in todos if m["id"] not in enrolled]
 
-        if matriculados:
-            self._section_label(
-                f"✓  Matriculado  ({len(matriculados)})",
-                bg=_ENROLL_BG,
-                fg=_ACCENT,
-            )
-            for i, (mid, mn) in enumerate(matriculados):
-                self._membro_row(mid, mn, enrolled[mid], True, i)
+            if matriculados:
+                self._section_label(
+                    f"✓  Matriculado  ({len(matriculados)})",
+                    bg=_ENROLL_BG,
+                    fg=_ACCENT,
+                )
+                for i, (mid, mn) in enumerate(matriculados):
+                    self._membro_row(mid, mn, enrolled[mid], True, i)
 
-        if matriculados and disponiveis:
-            tk.Frame(self._inner, bg=_SEP, height=1).pack(fill="x", pady=2)
+            if matriculados and disponiveis:
+                tk.Frame(self._inner, bg=_SEP, height=1).pack(fill="x", pady=2)
 
-        if disponiveis:
-            self._section_label(
-                f"+  Disponível  ({len(disponiveis)})",
-                bg=_HDR_COL,
-                fg=_FG_MUTED,
-            )
-            for i, (mid, mn) in enumerate(disponiveis):
-                self._membro_row(mid, mn, self.patentes[-1], False, i)
+            if disponiveis:
+                self._section_label(
+                    f"+  Disponível  ({len(disponiveis)})",
+                    bg=_HDR_COL,
+                    fg=_FG_MUTED,
+                )
+                for i, (mid, mn) in enumerate(disponiveis):
+                    self._membro_row(mid, mn, self.patentes[-1], False, i)
+        except Exception as e:
+            messagebox.showerror("Erro ao carregar membros", str(e))
 
     def adicionar(self) -> None:
         dlg = SquadDialog(self, "Adicionar Time")
@@ -409,14 +406,14 @@ class SquadsFrame(ttk.Frame):
 
         nome, _desc = dlg.result
         try:
-            with session_scope() as session:
-                session.add(Squad(nome=nome))
-        except IntegrityError:
-            messagebox.showerror("Erro", "Já existe um time com esse nome.")
-            return
-
-        messagebox.showinfo("Sucesso", f"Time '{nome}' adicionado.")
-        self.atualizar_lista()
+            success, error, squad_id = self.service.create_squad(nome)
+            if not success:
+                messagebox.showerror("Erro", error)
+                return
+            messagebox.showinfo("Sucesso", f"Time '{nome}' adicionado.")
+            self.atualizar_lista()
+        except Exception as e:
+            messagebox.showerror("Erro", str(e))
 
     def editar(self) -> None:
         sel = self.tree_squads.selection()
@@ -425,21 +422,26 @@ class SquadsFrame(ttk.Frame):
             return
 
         squad_id = sel[0]
-        with session_scope() as session:
-            squad = session.query(Squad).filter(Squad.id == squad_id).first()
+        try:
+            squad = self.service.get_squad_by_id(squad_id)
             if not squad:
                 messagebox.showwarning("Aviso", "Time não encontrado.")
                 return
 
-            dlg = SquadDialog(self, "Editar Time", squad.nome, "")
+            dlg = SquadDialog(self, "Editar Time", squad["nome"], "")
             if not dlg.result:
                 return
 
             novo_nome, _nova_desc = dlg.result
-            squad.nome = novo_nome
+            success, error = self.service.update_squad_name(squad_id, novo_nome)
+            if not success:
+                messagebox.showerror("Erro", error)
+                return
 
-        messagebox.showinfo("Sucesso", "Time atualizado.")
-        self.atualizar_lista()
+            messagebox.showinfo("Sucesso", "Time atualizado.")
+            self.atualizar_lista()
+        except Exception as e:
+            messagebox.showerror("Erro", str(e))
 
     def remover(self) -> None:
         sel = self.tree_squads.selection()
@@ -451,13 +453,15 @@ class SquadsFrame(ttk.Frame):
         if not messagebox.askyesno("Confirmar", f"Remover time '{nome}'?"):
             return
 
-        with session_scope() as session:
-            squad = session.query(Squad).filter(Squad.id == squad_id).first()
-            if squad:
-                session.delete(squad)
-
-        messagebox.showinfo("Sucesso", "Time removido.")
-        self.atualizar_lista()
+        try:
+            success, error = self.service.delete_squad(squad_id)
+            if not success:
+                messagebox.showerror("Erro", error)
+                return
+            messagebox.showinfo("Sucesso", "Time removido.")
+            self.atualizar_lista()
+        except Exception as e:
+            messagebox.showerror("Erro", str(e))
 
     def salvar_membros(self) -> None:
         if not self._squad_selecionado:
@@ -469,27 +473,22 @@ class SquadsFrame(ttk.Frame):
 
         squad_id = self._squad_selecionado
         try:
-            with session_scope() as session:
-                (
-                    session.query(MemberSquad)
-                    .filter(MemberSquad.squad_id == squad_id)
-                    .delete(synchronize_session=False)
-                )
-
-                for membro_id, (var_check, var_patente) in self.membros_widgets.items():
-                    if var_check.get():
-                        session.add(
-                            MemberSquad(
-                                member_id=membro_id,
-                                squad_id=squad_id,
-                                level=_PATENTE_TO_LEVEL.get(var_patente.get(), 2),
-                            )
-                        )
-        except IntegrityError as e:
-            messagebox.showerror("Erro", f"Erro ao salvar: {e}")
-            return
-
-        messagebox.showinfo("Sucesso", "Membros atualizados.")
-        self.atualizar_lista()
-        self.tree_squads.selection_set(str(squad_id))
-        self._on_select()
+            # Build list of (member_id, level) tuples for members that are checked
+            memberships = []
+            for membro_id, (var_check, var_patente) in self.membros_widgets.items():
+                if var_check.get():
+                    level = _PATENTE_TO_LEVEL.get(var_patente.get(), 2)
+                    memberships.append((membro_id, level))
+            
+            # Bulk update memberships
+            success, error = self.service.bulk_update_squad_memberships(squad_id, memberships)
+            if not success:
+                messagebox.showerror("Erro", error)
+                return
+            
+            messagebox.showinfo("Sucesso", "Membros atualizados.")
+            self.atualizar_lista()
+            self.tree_squads.selection_set(str(squad_id))
+            self._on_select()
+        except Exception as e:
+            messagebox.showerror("Erro", str(e))

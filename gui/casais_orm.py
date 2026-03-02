@@ -3,7 +3,8 @@
 import tkinter as tk
 from tkinter import messagebox, ttk
 
-from infra.database import FamilyCouple, Member, session_scope
+from services.casais_service import CasaisService
+from services.member_service import MemberService
 
 
 class CasaisFrame(tk.Frame):
@@ -22,6 +23,8 @@ class CasaisFrame(tk.Frame):
 
     def __init__(self, parent):
         super().__init__(parent, bg=self._BG)
+        self.service = CasaisService()
+        self.member_service = MemberService()
         self._build_widgets()
         self._refresh_data()
 
@@ -174,12 +177,11 @@ class CasaisFrame(tk.Frame):
     def _load_membros_combo(self):
         """Carrega membros para os comboboxes."""
         try:
-            with session_scope() as session:
-                membros = session.query(Member).order_by(Member.name).all()
-                self.membros_dict = {m.name: m.id for m in membros}
-                nomes = [m.name for m in membros]
-                self.combo1["values"] = nomes
-                self.combo2["values"] = nomes
+            membros = self.member_service.get_all_members()
+            self.membros_dict = {m.name: m.id for m in membros}
+            nomes = [m.name for m in membros]
+            self.combo1["values"] = nomes
+            self.combo2["values"] = nomes
         except Exception as e:
             messagebox.showerror("Erro", f"Erro ao carregar membros: {e}")
 
@@ -189,12 +191,11 @@ class CasaisFrame(tk.Frame):
             self.tree.delete(item)
 
         try:
-            with session_scope() as session:
-                casais = session.query(FamilyCouple).order_by(FamilyCouple.member1_id).all()
-                for casal in casais:
-                    nome1 = casal.member1.name if casal.member1 else "N/A"
-                    nome2 = casal.member2.name if casal.member2 else "N/A"
-                    self.tree.insert("", "end", values=(nome1, nome2))
+            casais = self.service.get_all_couples()
+            for casal in casais:
+                nome1 = casal.member1.name if casal.member1 else "N/A"
+                nome2 = casal.member2.name if casal.member2 else "N/A"
+                self.tree.insert("", "end", values=(nome1, nome2), iid=casal.id)
         except Exception as e:
             messagebox.showerror("Erro", f"Erro ao carregar casais: {e}")
 
@@ -221,27 +222,13 @@ class CasaisFrame(tk.Frame):
             return
 
         try:
-            with session_scope() as session:
-                # Verifica se casal já existe
-                existe = (
-                    session.query(FamilyCouple)
-                    .filter(
-                        ((FamilyCouple.member1_id == id1) & (FamilyCouple.member2_id == id2))
-                        | ((FamilyCouple.member1_id == id2) & (FamilyCouple.member2_id == id1))
-                    )
-                    .first()
-                )
-                if existe:
-                    messagebox.showerror("Erro", "Este casal já existe.")
-                    return
-
-                novo_casal = FamilyCouple(member1_id=id1, member2_id=id2)
-                session.add(novo_casal)
-                session.commit()
-                messagebox.showinfo("Sucesso", "Casal cadastrado.")
-                self._load_casais()
-                self.combo1.set("")
-                self.combo2.set("")
+            self.service.create_couple(id1, id2)
+            messagebox.showinfo("Sucesso", "Casal cadastrado.")
+            self._load_casais()
+            self.combo1.set("")
+            self.combo2.set("")
+        except ValueError as e:
+            messagebox.showerror("Erro", str(e))
         except Exception as e:
             messagebox.showerror("Erro", f"Erro ao cadastrar casal: {e}")
 
@@ -252,7 +239,8 @@ class CasaisFrame(tk.Frame):
             messagebox.showwarning("Aviso", "Selecione um casal na lista.")
             return
 
-        item = self.tree.item(sel[0])
+        couple_id = sel[0]
+        item = self.tree.item(couple_id)
         nome1, nome2 = item["values"]
 
         if not messagebox.askyesno(
@@ -260,26 +248,12 @@ class CasaisFrame(tk.Frame):
         ):
             return
 
-        id1 = self.membros_dict.get(nome1)
-        id2 = self.membros_dict.get(nome2)
-        if not id1 or not id2:
-            messagebox.showerror("Erro", "Membros não encontrados.")
-            return
-
         try:
-            with session_scope() as session:
-                casal = (
-                    session.query(FamilyCouple)
-                    .filter(
-                        ((FamilyCouple.member1_id == id1) & (FamilyCouple.member2_id == id2))
-                        | ((FamilyCouple.member1_id == id2) & (FamilyCouple.member2_id == id1))
-                    )
-                    .first()
-                )
-                if casal:
-                    session.delete(casal)
-                    session.commit()
-                    messagebox.showinfo("Sucesso", "Casal removido.")
-                    self._load_casais()
+            self.service.delete_couple(couple_id)
+            messagebox.showinfo("Sucesso", "Casal removido.")
+            self._load_casais()
+        except ValueError as e:
+            messagebox.showerror("Erro", str(e))
         except Exception as e:
             messagebox.showerror("Erro", f"Erro ao remover casal: {e}")
+

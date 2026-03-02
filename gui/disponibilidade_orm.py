@@ -1,10 +1,11 @@
 # gui/disponibilidade_orm.py
 
 import tkinter as tk
-from datetime import datetime
 from tkinter import messagebox, ttk
 
-from infra.database import Member, MemberRestrictions, session_scope
+from services.disponibilidade_service import DisponibilidadeService
+from services.membros_service import MembrosService
+from helpers.disponibilidade import MemberRestrictionError
 
 
 class DisponibilidadeFrame(tk.Frame):
@@ -23,6 +24,8 @@ class DisponibilidadeFrame(tk.Frame):
 
     def __init__(self, parent):
         super().__init__(parent, bg=self._BG)
+        self.service = DisponibilidadeService()
+        self.membros_service = MembrosService()
         self.membro_atual_id = None
         self._build_widgets()
         self._load_membros()
@@ -205,16 +208,15 @@ class DisponibilidadeFrame(tk.Frame):
         )
 
     def _load_membros(self):
-        """Carrega membros para combo."""
+        """Carrega membros para combo via MembrosService."""
         try:
-            with session_scope() as session:
-                membros = session.query(Member).order_by(Member.name).all()
-                self.membros_dict = {m.name: m.id for m in membros}
-                nomes = [m.name for m in membros]
-                self.combo_membros["values"] = nomes
-                if nomes:
-                    self.combo_membros.set(nomes[0])
-                    self._on_membro_selected()
+            membros = self.membros_service.get_all_members()
+            self.membros_dict = {m.name: m.id for m in membros}
+            nomes = [m.name for m in membros]
+            self.combo_membros["values"] = nomes
+            if nomes:
+                self.combo_membros.set(nomes[0])
+                self._on_membro_selected()
         except Exception as e:
             messagebox.showerror("Erro", f"Erro ao carregar membros: {e}")
 
@@ -227,7 +229,7 @@ class DisponibilidadeFrame(tk.Frame):
         self._load_restricoes()
 
     def _load_restricoes(self):
-        """Carrega restrições do membro selecionado."""
+        """Carrega restrições do membro selecionado via service."""
         if not self.membro_atual_id:
             return
 
@@ -236,24 +238,18 @@ class DisponibilidadeFrame(tk.Frame):
             self.tree_restricoes.delete(item)
 
         try:
-            with session_scope() as session:
-                restricoes = (
-                    session.query(MemberRestrictions)
-                    .filter(MemberRestrictions.member_id == self.membro_atual_id)
-                    .order_by(MemberRestrictions.date)
-                    .all()
+            restricoes = self.service.get_restrictions_by_member(self.membro_atual_id)
+            for restricao in restricoes:
+                self.tree_restricoes.insert(
+                    "",
+                    "end",
+                    values=(restricao["date_display"], restricao["description"]),
                 )
-                for restricao in restricoes:
-                    self.tree_restricoes.insert(
-                        "",
-                        "end",
-                        values=(restricao.date.strftime("%d/%m/%Y"), restricao.description or ""),
-                    )
         except Exception as e:
             messagebox.showerror("Erro", f"Erro ao carregar restrições: {e}")
 
     def _add_restricao(self):
-        """Adiciona nova restrição."""
+        """Adiciona nova restrição via service."""
         if not self.membro_atual_id:
             messagebox.showwarning("Aviso", "Selecione um membro.")
             return
@@ -266,29 +262,25 @@ class DisponibilidadeFrame(tk.Frame):
             return
 
         try:
-            data = datetime.strptime(data_str, "%d/%m/%Y").date()
-        except ValueError:
-            messagebox.showerror("Erro", "Data inválida. Use DD/MM/YYYY.")
-            return
-
-        try:
-            with session_scope() as session:
-                restricao = MemberRestrictions(
-                    member_id=self.membro_atual_id,
-                    date=data,
-                    description=descricao,
-                )
-                session.add(restricao)
-                session.commit()
-                messagebox.showinfo("Sucesso", "Restrição adicionada.")
+            result = self.service.create_restriction(
+                self.membro_atual_id,
+                data_str,
+                descricao
+            )
+            if result["success"]:
+                messagebox.showinfo("Sucesso", result["message"])
                 self._load_restricoes()
                 self.entry_data.delete(0, tk.END)
                 self.entry_descricao.delete(0, tk.END)
+            else:
+                messagebox.showerror("Erro", result["message"])
+        except MemberRestrictionError as e:
+            messagebox.showerror("Erro de Validação", str(e))
         except Exception as e:
             messagebox.showerror("Erro", f"Erro ao adicionar restrição: {e}")
 
     def _remove_restricao(self):
-        """Remove restrição selecionada."""
+        """Remove restrição selecionada via service."""
         sel = self.tree_restricoes.selection()
         if not sel:
             messagebox.showwarning("Aviso", "Selecione uma restrição.")
@@ -296,7 +288,6 @@ class DisponibilidadeFrame(tk.Frame):
 
         item = self.tree_restricoes.item(sel[0])
         data_str = item["values"][0]
-        descricao = item["values"][1]
 
         if not messagebox.askyesno(
             "Confirmar", f"Remover restrição de {data_str}?"
@@ -304,21 +295,14 @@ class DisponibilidadeFrame(tk.Frame):
             return
 
         try:
-            data = datetime.strptime(data_str, "%d/%m/%Y").date()
-            with session_scope() as session:
-                restricao = (
-                    session.query(MemberRestrictions)
-                    .filter(
-                        (MemberRestrictions.member_id == self.membro_atual_id)
-                        & (MemberRestrictions.date == data)
-                    )
-                    .first()
-                )
-                if restricao:
-                    session.delete(restricao)
-                    session.commit()
-                    messagebox.showinfo("Sucesso", "Restrição removida.")
-                    self._load_restricoes()
+            result = self.service.remove_restriction(self.membro_atual_id, data_str)
+            if result["success"]:
+                messagebox.showinfo("Sucesso", result["message"])
+                self._load_restricoes()
+            else:
+                messagebox.showerror("Erro", result["message"])
+        except MemberRestrictionError as e:
+            messagebox.showerror("Erro de Validação", str(e))
         except Exception as e:
             messagebox.showerror("Erro", f"Erro ao remover restrição: {e}")
 

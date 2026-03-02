@@ -127,10 +127,21 @@ class SquadDialog(tk.Toplevel):
 class EventoDialog(tk.Toplevel):
     """Diálogo para cadastro/edição de eventos."""
 
-    def __init__(self, parent):
+    def __init__(
+        self,
+        parent,
+        title="Cadastro de Evento",
+        nome="",
+        tipo="",
+        dia="",
+        data="",
+        horario="",
+        descricao="",
+    ):
         super().__init__(parent)
-        self.title("Cadastro de Evento")
+        self.title(title)
         self.result = None
+        self.dialog = self
         center_popup(self, 500, 350)
 
         # Frame principal
@@ -141,6 +152,8 @@ class EventoDialog(tk.Toplevel):
         ttk.Label(frame, text="Nome:").grid(row=0, column=0, sticky="w", pady=5)
         self.nome = ttk.Entry(frame, width=40)
         self.nome.grid(row=0, column=1, sticky="ew", pady=5)
+        if nome:
+            self.nome.insert(0, nome)
 
         # Tipo
         ttk.Label(frame, text="Tipo:").grid(row=1, column=0, sticky="w", pady=5)
@@ -148,25 +161,48 @@ class EventoDialog(tk.Toplevel):
             frame, values=["fixo", "sazonal", "eventual"], state="readonly", width=37
         )
         self.tipo.grid(row=1, column=1, sticky="ew", pady=5)
+        if tipo:
+            self.tipo.set(tipo)
+
+        # Dia (para fixo)
+        ttk.Label(frame, text="Dia da Semana:").grid(row=2, column=0, sticky="w", pady=5)
+        self.dia = ttk.Combobox(
+            frame,
+            values=["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", 
+                   "Quinta-feira", "Sexta-feira", "Sábado"],
+            state="readonly",
+            width=37
+        )
+        self.dia.grid(row=2, column=1, sticky="ew", pady=5)
+        if dia:
+            self.dia.set(dia)
+        else:
+            self.dia.set("Domingo")
 
         # Data (para sazonal/eventual)
-        ttk.Label(frame, text="Data (YYYY-MM-DD):").grid(row=2, column=0, sticky="w", pady=5)
+        ttk.Label(frame, text="Data (DD/MM/YYYY):").grid(row=3, column=0, sticky="w", pady=5)
         self.data = ttk.Entry(frame, width=40)
-        self.data.grid(row=2, column=1, sticky="ew", pady=5)
+        self.data.grid(row=3, column=1, sticky="ew", pady=5)
+        if data:
+            self.data.insert(0, data)
 
         # Horário
-        ttk.Label(frame, text="Horário (HH:MM):").grid(row=3, column=0, sticky="w", pady=5)
+        ttk.Label(frame, text="Horário (HH:MM):").grid(row=4, column=0, sticky="w", pady=5)
         self.horario = ttk.Entry(frame, width=40)
-        self.horario.grid(row=3, column=1, sticky="ew", pady=5)
+        self.horario.grid(row=4, column=1, sticky="ew", pady=5)
+        if horario:
+            self.horario.insert(0, horario)
 
         # Detalhes
-        ttk.Label(frame, text="Detalhes:").grid(row=4, column=0, sticky="w", pady=5)
+        ttk.Label(frame, text="Detalhes:").grid(row=5, column=0, sticky="w", pady=5)
         self.detalhes = ttk.Entry(frame, width=40)
-        self.detalhes.grid(row=4, column=1, sticky="ew", pady=5)
+        self.detalhes.grid(row=5, column=1, sticky="ew", pady=5)
+        if descricao:
+            self.detalhes.insert(0, descricao)
 
         # Botões
         btn_frame = ttk.Frame(frame)
-        btn_frame.grid(row=5, column=0, columnspan=2, pady=20)
+        btn_frame.grid(row=6, column=0, columnspan=2, pady=20)
 
         ttk.Button(btn_frame, text="Salvar", command=self.save).pack(side="left", padx=5)
         ttk.Button(btn_frame, text="Cancelar", command=self.destroy).pack(side="left", padx=5)
@@ -179,5 +215,13 @@ class EventoDialog(tk.Toplevel):
             messagebox.showwarning("Aviso", "Nome é obrigatório.")
             return
 
-        messagebox.showinfo("Sucesso", "Evento salvo com sucesso!")
+        # Retornar tupla (nome, tipo, dia, data, horario, descricao)
+        self.result = (
+            self.nome.get(),
+            self.tipo.get(),
+            self.dia.get(),
+            self.data.get(),
+            self.horario.get(),
+            self.detalhes.get(),
+        )
         self.destroy()
