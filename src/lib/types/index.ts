@@ -68,6 +68,19 @@ export interface UpdateEventDto {
   notes?: string;
 }
 
+export interface EventSquad {
+  squad_id: string;
+  squad_name: string;
+  min_members: number;
+  max_members: number;
+}
+
+export interface EventSquadDto {
+  squad_id: string;
+  min_members: number;
+  max_members: number;
+}
+
 export interface ScheduleEntryView {
   entry_id: string;
   squad_id: string;

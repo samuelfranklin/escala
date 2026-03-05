@@ -75,6 +75,8 @@ pub fn run() {
             commands::event::create_event,
             commands::event::update_event,
             commands::event::delete_event,
+            commands::event::get_event_squads,
+            commands::event::set_event_squads,
             // Schedule
             commands::schedule::get_schedule,
             commands::schedule::generate_schedule,

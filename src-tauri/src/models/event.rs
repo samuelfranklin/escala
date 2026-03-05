@@ -11,9 +11,18 @@ pub struct Event {
     pub updated_at: String,
 }
 
+/// View retornada ao frontend (inclui nome do squad via JOIN)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EventSquad {
-    pub event_id: String,
+    pub squad_id: String,
+    pub squad_name: String,
+    pub min_members: i64,
+    pub max_members: i64,
+}
+
+/// Input para configurar squads num evento
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct EventSquadDto {
     pub squad_id: String,
     pub min_members: i64,
     pub max_members: i64,
