@@ -1,6 +1,7 @@
 <script lang="ts">
   import '../app.css';
   import { page } from '$app/stores';
+  import ToastContainer from '$lib/components/ui/ToastContainer.svelte';
 
   const navItems = [
     { href: '/dashboard',     label: 'Dashboard',       icon: '◉' },
@@ -38,6 +39,8 @@
     <slot />
   </main>
 </div>
+
+<ToastContainer />
 
 <style>
   .app-shell {

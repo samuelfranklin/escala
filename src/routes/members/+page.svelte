@@ -1,11 +1,11 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { getMembers, createMember, deleteMember } from '$lib/api/members';
+  import { toast } from '$lib/stores/toast';
   import type { Member, CreateMemberDto } from '$lib/types';
 
   let members = $state<Member[]>([]);
   let loading = $state(true);
-  let error = $state('');
   let search = $state('');
   let showModal = $state(false);
   let form = $state<CreateMemberDto>({ name: '', email: '', phone: '', instagram: '', rank: 'member' });
@@ -18,24 +18,25 @@
 
   async function load() {
     loading = true;
-    try { members = await getMembers(); } 
-    catch (e) { error = 'Erro ao carregar membros'; }
+    try { members = await getMembers(); }
+    catch { toast.error('Erro ao carregar membros'); }
     finally { loading = false; }
   }
 
   async function handleCreate() {
     try {
       await createMember(form);
+      toast.success('Membro criado com sucesso!');
       showModal = false;
       form = { name: '', email: '', phone: '', instagram: '', rank: 'member' };
       await load();
-    } catch (e: any) { error = e.message || 'Erro ao criar membro'; }
+    } catch (e: any) { toast.error(e.message || 'Erro ao criar membro'); }
   }
 
   async function handleDelete(id: string) {
     if (!confirm('Remover membro?')) return;
-    try { await deleteMember(id); await load(); }
-    catch (e: any) { error = e.message || 'Erro ao remover'; }
+    try { await deleteMember(id); toast.success('Membro removido.'); await load(); }
+    catch (e: any) { toast.error(e.message || 'Erro ao remover'); }
   }
 </script>
 
@@ -46,8 +47,6 @@
   </div>
 
   <input class="input" style="max-width:300px;margin-bottom:var(--space-4)" type="search" placeholder="Buscar membro..." bind:value={search} />
-
-  {#if error}<p style="color:var(--color-danger-500);margin-bottom:var(--space-4)">{error}</p>{/if}
 
   {#if loading}
     <p>Carregando...</p>

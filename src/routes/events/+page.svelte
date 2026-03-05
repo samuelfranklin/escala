@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { getEvents, createEvent, deleteEvent, getEventSquads, setEventSquads } from '$lib/api/events';
   import { getSquads } from '$lib/api/squads';
+  import { toast } from '$lib/stores/toast';
   import type { Event, CreateEventDto, Squad, EventSquad, EventSquadDto } from '$lib/types';
 
   let events = $state<Event[]>([]);
@@ -12,7 +13,6 @@
   let loading = $state(true);
   let saving = $state(false);
   let showModal = $state(false);
-  let error = $state('');
   let form = $state<CreateEventDto>({ name: '', event_date: '', event_type: 'regular' });
 
   // Estado local de configuração dos squads no painel
@@ -58,10 +58,10 @@
         .filter(([, v]) => v.enabled)
         .map(([squad_id, v]) => ({ squad_id, min_members: v.min, max_members: v.max }));
       eventSquads = await setEventSquads(selectedEvent.id, items);
-      // Atualizar cache de contagem do evento salvo
       eventSquadCounts = { ...eventSquadCounts, [selectedEvent.id]: eventSquads.length };
+      toast.success('Configuração salva!');
     } catch (e: any) {
-      error = e.message || 'Erro ao salvar configuração';
+      toast.error(e.message || 'Erro ao salvar configuração');
     } finally {
       saving = false;
     }
@@ -71,11 +71,12 @@
     if (!form.name.trim() || !form.event_date) return;
     try {
       await createEvent(form);
+      toast.success('Evento criado!');
       showModal = false;
       form = { name: '', event_date: '', event_type: 'regular' };
       await load();
     } catch (e: any) {
-      error = e.message || 'Erro ao criar evento';
+      toast.error(e.message || 'Erro ao criar evento');
     }
   }
 
@@ -83,10 +84,11 @@
     if (!confirm('Remover evento?')) return;
     try {
       await deleteEvent(id);
+      toast.success('Evento removido.');
       if (selectedEvent?.id === id) selectedEvent = null;
       await load();
     } catch (e: any) {
-      error = e.message || 'Erro ao remover';
+      toast.error(e.message || 'Erro ao remover');
     }
   }
 
@@ -103,8 +105,6 @@
       <h1 style="font-size:var(--text-2xl);font-weight:700">Eventos</h1>
       <button class="btn btn-primary" onclick={() => showModal = true}>+ Novo Evento</button>
     </div>
-
-    {#if error}<p style="color:var(--color-danger-500);margin-bottom:var(--space-3)">{error}</p>{/if}
 
     {#if loading}
       <p>Carregando...</p>

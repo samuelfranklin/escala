@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { getSquads, createSquad, deleteSquad, getSquadMembers, addMemberToSquad, removeMemberFromSquad } from '$lib/api/squads';
   import { getMembers } from '$lib/api/members';
+  import { toast } from '$lib/stores/toast';
   import type { Squad, Member } from '$lib/types';
 
   let squads = $state<Squad[]>([]);
@@ -28,14 +29,16 @@
 
   async function handleCreate() {
     if (!newName.trim()) return;
-    await createSquad({ name: newName });
+    try { await createSquad({ name: newName }); toast.success('Time criado!'); }
+    catch (e: any) { toast.error(e.message || 'Erro ao criar time'); return; }
     newName = ''; showModal = false;
     await load();
   }
 
   async function handleDelete(id: string) {
     if (!confirm('Remover time?')) return;
-    await deleteSquad(id);
+    try { await deleteSquad(id); toast.success('Time removido.'); }
+    catch (e: any) { toast.error(e.message || 'Erro ao remover'); return; }
     if (selectedSquad?.id === id) selectedSquad = null;
     await load();
   }

@@ -1,7 +1,7 @@
 # TASK-021 — Sistema de Toast (Feedback de Ações)
 
 **Domínio:** FRONTEND  
-**Status:** WAITING  
+**Status:** DONE  
 **Prioridade:** P1 (alta — todas as telas precisam de feedback adequado; hoje só há texto de erro inline)  
 **Depende de:** TASK-008 (design system)  
 **Estimativa:** S (< 2h)

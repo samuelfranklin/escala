@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { getEvents } from '$lib/api/events';
   import { getSchedule, generateSchedule, clearSchedule } from '$lib/api/schedule';
+  import { toast } from '$lib/stores/toast';
   import type { Event, ScheduleView } from '$lib/types';
 
   let events = $state<Event[]>([]);
@@ -9,7 +10,6 @@
   let schedule = $state<ScheduleView | null>(null);
   let loading = $state(false);
   let generating = $state(false);
-  let error = $state('');
 
   onMount(async () => { events = await getEvents(); });
 
@@ -23,9 +23,9 @@
 
   async function handleGenerate() {
     if (!selectedEventId) return;
-    generating = true; error = '';
-    try { schedule = await generateSchedule(selectedEventId); }
-    catch (e: any) { error = e.message || 'Erro ao gerar escala'; }
+    generating = true;
+    try { schedule = await generateSchedule(selectedEventId); toast.success('Escala gerada!'); }
+    catch (e: any) { toast.error(e.message || 'Erro ao gerar escala'); }
     finally { generating = false; }
   }
 
@@ -65,8 +65,6 @@
       <button class="btn btn-secondary" onclick={handleClear}>Limpar</button>
     {/if}
   </div>
-
-  {#if error}<p style="color:var(--color-danger-500);margin-bottom:var(--space-4)">{error}</p>{/if}
 
   {#if loading}<p>Carregando...</p>
   {:else if schedule}
