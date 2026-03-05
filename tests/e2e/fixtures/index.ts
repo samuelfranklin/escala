@@ -1,47 +1,28 @@
 /**
- * Shared test fixtures for E2E tests.
- *
- * Wraps Playwright's `test` with custom fixtures that provide
- * helpers for common app interactions.
+ * Shared test fixtures — expõe Page Objects para todos os testes E2E.
  */
-import { test as base, type Page } from '@playwright/test';
-
-/** Navigate to a sidebar route by path */
-async function goto(page: Page, path: string): Promise<void> {
-  await page.goto(path);
-  await page.waitForLoadState('networkidle');
-}
-
-/** Close any open modal by pressing Escape */
-async function closeModal(page: Page): Promise<void> {
-  await page.keyboard.press('Escape');
-  await page.waitForTimeout(200);
-}
-
-/** Fill a form field by label text */
-async function fillField(page: Page, label: string, value: string): Promise<void> {
-  const input = page.locator(`label:has-text("${label}") + input, label:has-text("${label}") ~ input`).first();
-  await input.clear();
-  await input.fill(value);
-}
+import { test as base } from '@playwright/test';
+import { MembersPage } from '../pages/MembersPage';
+import { SquadsPage }  from '../pages/SquadsPage';
+import { EventsPage }  from '../pages/EventsPage';
+import { SchedulePage } from '../pages/SchedulePage';
+import { DashboardPage } from '../pages/DashboardPage';
 
 export type AppFixtures = {
-  /** Navigates to a page path */
-  goto: (path: string) => Promise<void>;
-  closeModal: () => Promise<void>;
-  fillField: (label: string, value: string) => Promise<void>;
+  membersPage: MembersPage;
+  squadsPage: SquadsPage;
+  eventsPage: EventsPage;
+  schedulePage: SchedulePage;
+  dashboardPage: DashboardPage;
 };
 
 export const test = base.extend<AppFixtures>({
-  goto: async ({ page }, use) => {
-    await use((path: string) => goto(page, path));
-  },
-  closeModal: async ({ page }, use) => {
-    await use(() => closeModal(page));
-  },
-  fillField: async ({ page }, use) => {
-    await use((label: string, value: string) => fillField(page, label, value));
-  },
+  membersPage:  async ({ page }, use) => use(new MembersPage(page)),
+  squadsPage:   async ({ page }, use) => use(new SquadsPage(page)),
+  eventsPage:   async ({ page }, use) => use(new EventsPage(page)),
+  schedulePage: async ({ page }, use) => use(new SchedulePage(page)),
+  dashboardPage: async ({ page }, use) => use(new DashboardPage(page)),
 });
 
 export { expect } from '@playwright/test';
+
