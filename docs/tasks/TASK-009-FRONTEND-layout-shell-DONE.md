@@ -1,7 +1,7 @@
 # TASK-009 — Shell da Aplicação (Layout + Navegação)
 
 **Domínio:** FRONTEND  
-**Status:** WAITING  
+**Status:** DONE  
 **Prioridade:** P1  
 **Depende de:** TASK-008 (design system)  
 **Estimativa:** M

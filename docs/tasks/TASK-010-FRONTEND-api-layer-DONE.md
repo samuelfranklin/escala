@@ -1,7 +1,7 @@
 # TASK-010 — Camada de API Tipada (invoke wrappers)
 
 **Domínio:** FRONTEND  
-**Status:** WAITING  
+**Status:** DONE  
 **Prioridade:** P0  
 **Depende de:** TASK-001 (scaffold Tauri + Svelte)  
 **Estimativa:** M

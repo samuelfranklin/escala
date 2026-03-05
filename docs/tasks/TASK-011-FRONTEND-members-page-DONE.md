@@ -1,7 +1,7 @@
 # TASK-011 — Página de Membros
 
 **Domínio:** FRONTEND  
-**Status:** WAITING  
+**Status:** DONE  
 **Prioridade:** P1  
 **Depende de:** TASK-008 (design system), TASK-009 (shell), TASK-010 (API layer), TASK-002 (backend members)  
 **Estimativa:** L

@@ -1,7 +1,7 @@
 # TASK-008 — Setup do Design System
 
 **Domínio:** FRONTEND  
-**Status:** WAITING  
+**Status:** DONE  
 **Prioridade:** P0  
 **Depende de:** TASK-001 (scaffold Tauri + Svelte)  
 **Estimativa:** M

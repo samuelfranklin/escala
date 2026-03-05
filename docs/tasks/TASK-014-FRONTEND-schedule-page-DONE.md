@@ -1,7 +1,7 @@
 # TASK-014 — Página de Escala (Geração e Visualização)
 
 **Domínio:** FRONTEND  
-**Status:** WAITING  
+**Status:** DONE  
 **Prioridade:** P1  
 **Depende de:** TASK-008 (design system), TASK-009 (shell), TASK-010 (API layer), TASK-005 (backend schedule), TASK-011 (members), TASK-012 (squads), TASK-013 (events)  
 **Estimativa:** L

@@ -1,7 +1,7 @@
 # TASK-012 — Página de Times (Squads)
 
 **Domínio:** FRONTEND  
-**Status:** WAITING  
+**Status:** DONE  
 **Prioridade:** P1  
 **Depende de:** TASK-008 (design system), TASK-009 (shell), TASK-010 (API layer), TASK-003 (backend squads)  
 **Estimativa:** M

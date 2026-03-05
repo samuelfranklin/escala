@@ -1,7 +1,7 @@
 # TASK-015 — Páginas de Disponibilidade e Casais
 
 **Domínio:** FRONTEND  
-**Status:** WAITING  
+**Status:** DONE  
 **Prioridade:** P1  
 **Depende de:** TASK-008 (design system), TASK-009 (shell), TASK-010 (API layer), TASK-006 (backend availability + couples), TASK-011 (members)  
 **Estimativa:** M
