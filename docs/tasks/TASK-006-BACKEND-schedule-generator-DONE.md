@@ -1,7 +1,7 @@
 # TASK-006 — Motor de Geração de Escala
 
 **Domínio:** BACKEND  
-**Status:** WAITING  
+**Status:** DONE  
 **Prioridade:** P0 — feature principal do produto  
 **Depende de:** TASK-002, TASK-003, TASK-004, TASK-005  
 **Estimativa:** XL (> 12h)

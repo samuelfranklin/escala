@@ -1,7 +1,7 @@
 # TASK-003 — CRUD Completo de Member
 
 **Domínio:** BACKEND  
-**Status:** WAITING  
+**Status:** DONE  
 **Prioridade:** P1  
 **Depende de:** TASK-002  
 **Estimativa:** M (2–6h)

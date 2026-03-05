@@ -1,7 +1,7 @@
 # TASK-007 — Commands de Couple e Availability
 
 **Domínio:** BACKEND  
-**Status:** WAITING  
+**Status:** DONE  
 **Prioridade:** P1  
 **Depende de:** TASK-002  
 **Estimativa:** S (< 2h)
