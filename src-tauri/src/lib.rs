@@ -4,16 +4,38 @@ pub mod errors;
 pub mod models;
 pub mod services;
 
-use sqlx::SqlitePool;
+use sqlx::{sqlite::SqlitePoolOptions, SqlitePool};
 
 pub struct AppState {
     pub db: SqlitePool,
 }
 
+async fn create_db_pool() -> SqlitePool {
+    let database_url = std::env::var("DATABASE_URL")
+        .unwrap_or_else(|_| "sqlite://escala.db".to_string());
+
+    let pool = SqlitePoolOptions::new()
+        .max_connections(5)
+        .connect(&database_url)
+        .await
+        .expect("Failed to connect to SQLite database");
+
+    sqlx::migrate!("./migrations")
+        .run(&pool)
+        .await
+        .expect("Failed to run database migrations");
+
+    pool
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    let rt = tokio::runtime::Runtime::new().expect("Failed to create tokio runtime");
+    let pool = rt.block_on(create_db_pool());
+
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .manage(AppState { db: pool })
         .invoke_handler(tauri::generate_handler![
             // Member
             commands::member::get_members,

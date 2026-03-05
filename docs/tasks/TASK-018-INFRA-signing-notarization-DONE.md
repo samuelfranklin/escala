@@ -1,7 +1,7 @@
 # TASK-018 — Assinatura e Notarização (macOS + Windows)
 
 **Domínio:** INFRA  
-**Status:** WAITING  
+**Status:** DONE  
 **Prioridade:** P2  
 **Depende de:** TASK-016 (GitHub Actions configurado com `release.yml`)  
 **Estimativa:** M

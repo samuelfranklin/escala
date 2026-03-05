@@ -1,7 +1,7 @@
 # TASK-017 — Suite E2E Completa (Playwright + Tauri WebDriver)
 
 **Domínio:** TEST  
-**Status:** WAITING  
+**Status:** DONE  
 **Prioridade:** P1  
 **Depende de:** TASK-014 (frontend completo com todos os fluxos implementados), TASK-006 (gerador de escala pronto)  
 **Estimativa:** XL

@@ -2,5 +2,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    escala_scaffold_lib::run()
+    escala_midia_lib::run()
 }

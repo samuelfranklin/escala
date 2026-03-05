@@ -1,7 +1,7 @@
 # TASK-016 — Configurar GitHub Actions (CI/CD Pipelines)
 
 **Domínio:** INFRA  
-**Status:** WAITING  
+**Status:** DONE  
 **Prioridade:** P1  
 **Depende de:** TASK-001 (scaffold do projeto existe com `src-tauri/` e `src/` estruturados)  
 **Estimativa:** L
