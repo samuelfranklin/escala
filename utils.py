@@ -19,7 +19,8 @@ def center_popup(window, width=500, height=400):
 class MembroDialog(tk.Toplevel):
     """Diálogo para cadastro/edição de membros."""
 
-    def __init__(self, parent, patentes):
+    def __init__(self, parent, patentes, nome="", email="", telefone="",
+                 patente="", data_entrada="", obs="", edicao=False):
         super().__init__(parent)
         self.title("Cadastro de Membro")
         self.patentes = patentes
@@ -34,16 +35,22 @@ class MembroDialog(tk.Toplevel):
         ttk.Label(frame, text="Nome:").grid(row=0, column=0, sticky="w", pady=5)
         self.nome = ttk.Entry(frame, width=40)
         self.nome.grid(row=0, column=1, sticky="ew", pady=5)
+        if nome:
+            self.nome.insert(0, nome)
 
         # Telefone
         ttk.Label(frame, text="Telefone:").grid(row=1, column=0, sticky="w", pady=5)
         self.phone = ttk.Entry(frame, width=40)
         self.phone.grid(row=1, column=1, sticky="ew", pady=5)
+        if telefone:
+            self.phone.insert(0, telefone)
 
         # Email
         ttk.Label(frame, text="Email:").grid(row=2, column=0, sticky="w", pady=5)
         self.email = ttk.Entry(frame, width=40)
         self.email.grid(row=2, column=1, sticky="ew", pady=5)
+        if email:
+            self.email.insert(0, email)
 
         # Instagram
         ttk.Label(frame, text="Instagram:").grid(row=3, column=0, sticky="w", pady=5)
@@ -54,6 +61,8 @@ class MembroDialog(tk.Toplevel):
         ttk.Label(frame, text="Patente:").grid(row=4, column=0, sticky="w", pady=5)
         self.patente = ttk.Combobox(frame, values=self.patentes, state="readonly", width=37)
         self.patente.grid(row=4, column=1, sticky="ew", pady=5)
+        if patente and patente in self.patentes:
+            self.patente.set(patente)
 
         # Botões
         btn_frame = ttk.Frame(frame)
@@ -64,30 +73,33 @@ class MembroDialog(tk.Toplevel):
 
         frame.columnconfigure(1, weight=1)
 
+        # Bloqueia o parent até o dialog fechar (comportamento modal)
+        self.grab_set()
+        self.wait_window(self)
+
     def save(self):
-        """Salva os dados."""
+        """Salva os dados e fecha o dialog."""
         if not self.nome.get():
             messagebox.showwarning("Aviso", "Nome é obrigatório.")
             return
 
-        data = {
-            "name": self.nome.get(),
-            "phone": self.phone.get() or None,
-            "email": self.email.get() or None,
-            "instagram": self.instagram.get() or None,
-            "patente": self.patente.get() or None,
-        }
-
-        messagebox.showinfo("Sucesso", "Membro salvo com sucesso!")
+        self.result = (
+            self.nome.get(),
+            self.email.get(),
+            self.phone.get(),
+            self.patente.get() if hasattr(self, "patente") else "",
+            "",  # data_entrada (não implementado)
+            "",  # obs (não implementado)
+        )
         self.destroy()
 
 
 class SquadDialog(tk.Toplevel):
     """Diálogo para cadastro/edição de squads."""
 
-    def __init__(self, parent):
+    def __init__(self, parent, title="Cadastro de Squad", nome="", desc=""):
         super().__init__(parent)
-        self.title("Cadastro de Squad")
+        self.title(title)
         self.result = None
         center_popup(self, 450, 250)
 
@@ -99,11 +111,15 @@ class SquadDialog(tk.Toplevel):
         ttk.Label(frame, text="Nome da Squad:").grid(row=0, column=0, sticky="w", pady=5)
         self.nome = ttk.Entry(frame, width=40)
         self.nome.grid(row=0, column=1, sticky="ew", pady=5)
+        if nome:
+            self.nome.insert(0, nome)
 
         # Descrição
         ttk.Label(frame, text="Descrição:").grid(row=1, column=0, sticky="w", pady=5)
         self.descricao = ttk.Entry(frame, width=40)
         self.descricao.grid(row=1, column=1, sticky="ew", pady=5)
+        if desc:
+            self.descricao.insert(0, desc)
 
         # Botões
         btn_frame = ttk.Frame(frame)
@@ -114,13 +130,17 @@ class SquadDialog(tk.Toplevel):
 
         frame.columnconfigure(1, weight=1)
 
+        # Bloqueia o parent até o dialog fechar (comportamento modal)
+        self.grab_set()
+        self.wait_window(self)
+
     def save(self):
-        """Salva os dados."""
+        """Salva os dados e fecha o dialog."""
         if not self.nome.get():
             messagebox.showwarning("Aviso", "Nome é obrigatório.")
             return
 
-        messagebox.showinfo("Sucesso", "Squad salva com sucesso!")
+        self.result = (self.nome.get(), self.descricao.get())
         self.destroy()
 
 

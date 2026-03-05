@@ -285,3 +285,17 @@ def get_events_by_squad(squad_id: str) -> List[Dict[str, Any]]:
             )
 
         return result
+
+
+
+class VisualizarService:
+    """Wrapper de classe para compatibilidade com gui/visualizar.py."""
+
+    def get_schedule_for_period(self, month: int, year: int):
+        return get_schedule_for_period(month, year)
+
+    def get_squad_allocations(self, squad_id: str):
+        return get_squad_allocations(squad_id)
+
+    def get_member_allocations(self, member_id: str):
+        return get_member_allocations(member_id)
