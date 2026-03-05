@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT member_a_id as \"member_a_id!\", member_b_id as \"member_b_id!\" FROM couples",
+  "describe": {
+    "columns": [
+      {
+        "name": "member_a_id!",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "member_b_id!",
+        "ordinal": 1,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "a4a419906b8d1247c45dc4f7269d4215685912557ad7627c6342903745a830e8"
+}

@@ -14,13 +14,14 @@ pub async fn get_schedule(pool: &SqlitePool, event_id: &str) -> Result<ScheduleV
 
 pub async fn generate_schedule(pool: &SqlitePool, event_id: &str) -> Result<ScheduleView, AppError> {
     // 1. Busca o evento e sua data
-    let event = sqlx::query!("SELECT id, event_date FROM events WHERE id = ?", event_id)
+    let event = sqlx::query!(
+        r#"SELECT id as "id!", event_date as "event_date!" FROM events WHERE id = ?"#, event_id)
         .fetch_optional(pool).await.map_err(AppError::from)?
         .ok_or_else(|| AppError::NotFound(format!("Event '{}' not found", event_id)))?;
 
     // 2. Busca squads configurados para o evento
     let event_squads = sqlx::query!(
-        "SELECT squad_id, min_members, max_members FROM event_squads WHERE event_id = ?", event_id)
+        r#"SELECT squad_id as "squad_id!", min_members, max_members FROM event_squads WHERE event_id = ?"#, event_id)
         .fetch_all(pool).await.map_err(AppError::from)?;
 
     if event_squads.is_empty() {
@@ -29,12 +30,13 @@ pub async fn generate_schedule(pool: &SqlitePool, event_id: &str) -> Result<Sche
 
     // 3. Indisponibilidades na data do evento
     let unavailable: HashSet<String> = sqlx::query!(
-        "SELECT member_id FROM availability WHERE unavailable_date = ?", event.event_date)
+        r#"SELECT member_id as "member_id!" FROM availability WHERE unavailable_date = ?"#, event.event_date)
         .fetch_all(pool).await.map_err(AppError::from)?
         .into_iter().map(|r| r.member_id).collect();
 
     // 4. Restrições de casais: id_a → {id_b, ...}
-    let couple_rows = sqlx::query!("SELECT member_a_id, member_b_id FROM couples")
+    let couple_rows = sqlx::query!(
+        r#"SELECT member_a_id as "member_a_id!", member_b_id as "member_b_id!" FROM couples"#)
         .fetch_all(pool).await.map_err(AppError::from)?;
     let mut couple_map: HashMap<String, HashSet<String>> = HashMap::new();
     for r in &couple_rows {
@@ -44,7 +46,7 @@ pub async fn generate_schedule(pool: &SqlitePool, event_id: &str) -> Result<Sche
 
     // 5. Contagem de escalas anteriores por membro (rotatividade)
     let schedule_counts = sqlx::query!(
-        "SELECT member_id, COUNT(*) as cnt FROM schedule_entries GROUP BY member_id")
+        r#"SELECT member_id as "member_id!", COUNT(*) as "cnt: i64" FROM schedule_entries GROUP BY member_id"#)
         .fetch_all(pool).await.map_err(AppError::from)?;
     let count_map: HashMap<String, i64> = schedule_counts.into_iter()
         .map(|r| (r.member_id, r.cnt)).collect();
@@ -58,7 +60,7 @@ pub async fn generate_schedule(pool: &SqlitePool, event_id: &str) -> Result<Sche
     for es in &event_squads {
         // Membros elegíveis: ativos, no squad, não indisponíveis
         let mut candidates = sqlx::query!(
-            r#"SELECT m.id FROM members m
+            r#"SELECT m.id as "id!" FROM members m
                INNER JOIN members_squads ms ON ms.member_id = m.id
                WHERE ms.squad_id = ? AND m.active = 1"#,
             es.squad_id)
@@ -80,7 +82,7 @@ pub async fn generate_schedule(pool: &SqlitePool, event_id: &str) -> Result<Sche
         'outer: for candidate in &candidates {
             if allocated_in_squad.len() >= max { break; }
             // Verifica restrição de casal com já alocados globalmente
-            if let Some(restricted) = couple_map.get(candidate) {
+            if let Some(restricted) = couple_map.get(candidate.as_str()) {
                 for already in &globally_allocated {
                     if restricted.contains(already) { continue 'outer; }
                 }

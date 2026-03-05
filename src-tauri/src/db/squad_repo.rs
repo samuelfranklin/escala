@@ -3,12 +3,14 @@ use sqlx::SqlitePool;
 use uuid::Uuid;
 
 pub async fn list_all(pool: &SqlitePool) -> Result<Vec<Squad>, AppError> {
-    sqlx::query_as!(Squad, "SELECT id, name, description, created_at, updated_at FROM squads ORDER BY name")
+    sqlx::query_as!(Squad,
+        r#"SELECT id as "id!", name as "name!", description, created_at as "created_at!", updated_at as "updated_at!" FROM squads ORDER BY name"#)
         .fetch_all(pool).await.map_err(AppError::from)
 }
 
 pub async fn get_by_id(pool: &SqlitePool, id: &str) -> Result<Squad, AppError> {
-    sqlx::query_as!(Squad, "SELECT id, name, description, created_at, updated_at FROM squads WHERE id = ?", id)
+    sqlx::query_as!(Squad,
+        r#"SELECT id as "id!", name as "name!", description, created_at as "created_at!", updated_at as "updated_at!" FROM squads WHERE id = ?"#, id)
         .fetch_optional(pool).await.map_err(AppError::from)?
         .ok_or_else(|| AppError::NotFound(format!("Squad '{}' not found", id)))
 }
@@ -42,8 +44,8 @@ pub async fn delete(pool: &SqlitePool, id: &str) -> Result<(), AppError> {
 pub async fn get_members(pool: &SqlitePool, squad_id: &str) -> Result<Vec<Member>, AppError> {
     sqlx::query_as!(
         Member,
-        r#"SELECT m.id, m.name, m.email, m.phone, m.instagram, m.rank,
-                  m.active as "active: bool", m.created_at, m.updated_at
+        r#"SELECT m.id as "id!", m.name as "name!", m.email, m.phone, m.instagram, m.rank as "rank!",
+                  m.active as "active: bool", m.created_at as "created_at!", m.updated_at as "updated_at!"
            FROM members m
            INNER JOIN members_squads ms ON ms.member_id = m.id
            WHERE ms.squad_id = ? ORDER BY m.name"#,

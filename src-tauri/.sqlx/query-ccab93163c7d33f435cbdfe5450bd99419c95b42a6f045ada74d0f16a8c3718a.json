@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT member_id as \"member_id!\", COUNT(*) as \"cnt: i64\" FROM schedule_entries GROUP BY member_id",
+  "describe": {
+    "columns": [
+      {
+        "name": "member_id!",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "cnt: i64",
+        "ordinal": 1,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "ccab93163c7d33f435cbdfe5450bd99419c95b42a6f045ada74d0f16a8c3718a"
+}

@@ -3,7 +3,8 @@ use sqlx::SqlitePool;
 use uuid::Uuid;
 
 pub async fn list_by_member(pool: &SqlitePool, member_id: &str) -> Result<Vec<Availability>, AppError> {
-    sqlx::query_as!(Availability, "SELECT id, member_id, unavailable_date, reason, created_at FROM availability WHERE member_id = ? ORDER BY unavailable_date", member_id)
+    sqlx::query_as!(Availability,
+        r#"SELECT id as "id!", member_id as "member_id!", unavailable_date as "unavailable_date!", reason, created_at as "created_at!" FROM availability WHERE member_id = ? ORDER BY unavailable_date"#, member_id)
         .fetch_all(pool).await.map_err(AppError::from)
 }
 
@@ -14,7 +15,8 @@ pub async fn create(pool: &SqlitePool, dto: CreateAvailabilityDto) -> Result<Ava
             sqlx::Error::Database(ref db) if db.message().contains("UNIQUE") => AppError::Conflict("Availability already registered for this date".into()),
             _ => AppError::from(e),
         })?;
-    sqlx::query_as!(Availability, "SELECT id, member_id, unavailable_date, reason, created_at FROM availability WHERE id = ?", id)
+    sqlx::query_as!(Availability,
+        r#"SELECT id as "id!", member_id as "member_id!", unavailable_date as "unavailable_date!", reason, created_at as "created_at!" FROM availability WHERE id = ?"#, id)
         .fetch_one(pool).await.map_err(AppError::from)
 }
 

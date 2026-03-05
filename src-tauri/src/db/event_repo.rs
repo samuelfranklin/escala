@@ -3,12 +3,14 @@ use sqlx::SqlitePool;
 use uuid::Uuid;
 
 pub async fn list_all(pool: &SqlitePool) -> Result<Vec<Event>, AppError> {
-    sqlx::query_as!(Event, "SELECT id, name, event_date, event_type, notes, created_at, updated_at FROM events ORDER BY event_date DESC")
+    sqlx::query_as!(Event,
+        r#"SELECT id as "id!", name as "name!", event_date as "event_date!", event_type as "event_type!", notes, created_at as "created_at!", updated_at as "updated_at!" FROM events ORDER BY event_date DESC"#)
         .fetch_all(pool).await.map_err(AppError::from)
 }
 
 pub async fn get_by_id(pool: &SqlitePool, id: &str) -> Result<Event, AppError> {
-    sqlx::query_as!(Event, "SELECT id, name, event_date, event_type, notes, created_at, updated_at FROM events WHERE id = ?", id)
+    sqlx::query_as!(Event,
+        r#"SELECT id as "id!", name as "name!", event_date as "event_date!", event_type as "event_type!", notes, created_at as "created_at!", updated_at as "updated_at!" FROM events WHERE id = ?"#, id)
         .fetch_optional(pool).await.map_err(AppError::from)?
         .ok_or_else(|| AppError::NotFound(format!("Event '{}' not found", id)))
 }

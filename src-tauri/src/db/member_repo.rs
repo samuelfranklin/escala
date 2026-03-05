@@ -5,8 +5,9 @@ use uuid::Uuid;
 pub async fn list_all(pool: &SqlitePool) -> Result<Vec<Member>, AppError> {
     sqlx::query_as!(
         Member,
-        "SELECT id, name, email, phone, instagram, rank, active as \"active: bool\", created_at, updated_at
-         FROM members ORDER BY name"
+        r#"SELECT id as "id!", name as "name!", email, phone, instagram, rank as "rank!",
+                  active as "active: bool", created_at as "created_at!", updated_at as "updated_at!"
+           FROM members ORDER BY name"#
     )
     .fetch_all(pool)
     .await
@@ -16,8 +17,9 @@ pub async fn list_all(pool: &SqlitePool) -> Result<Vec<Member>, AppError> {
 pub async fn get_by_id(pool: &SqlitePool, id: &str) -> Result<Member, AppError> {
     sqlx::query_as!(
         Member,
-        "SELECT id, name, email, phone, instagram, rank, active as \"active: bool\", created_at, updated_at
-         FROM members WHERE id = ?",
+        r#"SELECT id as "id!", name as "name!", email, phone, instagram, rank as "rank!",
+                  active as "active: bool", created_at as "created_at!", updated_at as "updated_at!"
+           FROM members WHERE id = ?"#,
         id
     )
     .fetch_optional(pool)

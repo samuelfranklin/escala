@@ -1,0 +1,44 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT se.id as \"entry_id!\", se.squad_id as \"squad_id!\", s.name as \"squad_name!\",\n                  se.member_id as \"member_id!\", m.name as \"member_name!\"\n           FROM schedule_entries se\n           JOIN squads s ON s.id = se.squad_id\n           JOIN members m ON m.id = se.member_id\n           WHERE se.event_id = ?\n           ORDER BY s.name, m.name",
+  "describe": {
+    "columns": [
+      {
+        "name": "entry_id!",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "squad_id!",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "squad_name!",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "member_id!",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "member_name!",
+        "ordinal": 4,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      true,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "ccb37f93c1a4f34d6ed1d28a287b7343540f4b0084065edbff8c8125d34eddeb"
+}

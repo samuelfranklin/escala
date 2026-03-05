@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "DELETE FROM members_squads WHERE squad_id = ? AND member_id = ?",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "379abef1a93ffa8fb234e2d8ecc3f1dda8cdfd22d36f5ee8d090808f2c8591cd"
+}
