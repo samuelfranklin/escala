@@ -28,9 +28,9 @@
 
 ## 1. Visão Geral
 
-**Produto:** App desktop multiplataforma para gestão de escala de voluntários do time de mídia de uma igreja.
+**Produto:** App desktop multiplataforma para gestão de escala por time de uma instituição
 
-**Problema resolvido:** Coordenadores de mídia gerenciam manualmente em planilhas quem serve em cada culto/evento — processo propenso a conflitos, faltas e retrabalho.
+**Problema resolvido:** Coordenadores gerenciam manualmente em planilhas quem serve em cada evento — processo propenso a conflitos, faltas e retrabalho.
 
 **Solução:** App offline-first que centraliza cadastro de membros, times, eventos e gera escalas automaticamente respeitando disponibilidade e restrições (casais, folgas, rotatividade).
 
@@ -469,7 +469,7 @@ Para cada data:
    a. Filtrar membros ativos desse squad
    b. Remover membros indisponíveis na data
    c. Remover membros que serviram recentemente (rotatividade)
-   d. Remover conflito de casais (não escalar par junto)
+   d. Remover conflito de casais (sempre escalar par junto)
    e. Ordenar por menor frequência de serviço (equidade)
    f. Selecionar N membros (entre min_members e max_members)
 3. Persistir e retornar
