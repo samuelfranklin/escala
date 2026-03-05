@@ -1,7 +1,7 @@
 # TASK-022 — Tela de Escala: Tabela por Squad × Data e Exportação CSV
 
 **Domínio:** FRONTEND  
-**Status:** WAITING  
+**Status:** DONE  
 **Prioridade:** P1 (alta — a tela de escala é a funcionalidade central do produto)  
 **Depende de:** TASK-019 (event_squads config — sem isso generate_schedule falha), TASK-021 (toast)  
 **Estimativa:** M (2–6h)

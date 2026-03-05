@@ -1,7 +1,7 @@
 # TASK-023 — Dashboard: KPIs Completos e Próximos Eventos
 
 **Domínio:** FRONTEND  
-**Status:** WAITING  
+**Status:** DONE  
 **Prioridade:** P2 (normal — funcional mas sem valor agregado atualmente)  
 **Depende de:** TASK-019, TASK-021 (toast), TASK-022 (schedule table)  
 **Estimativa:** S (< 2h)

@@ -3,6 +3,7 @@
   import { getEvents } from '$lib/api/events';
   import { getSchedule, generateSchedule, clearSchedule } from '$lib/api/schedule';
   import { toast } from '$lib/stores/toast';
+  import { pivotSchedule, generateCsv, generateCopyText } from '$lib/utils';
   import type { Event, ScheduleView } from '$lib/types';
 
   let events = $state<Event[]>([]);
@@ -15,7 +16,7 @@
 
   async function loadSchedule() {
     if (!selectedEventId) return;
-    loading = true; error = '';
+    loading = true;
     try { schedule = await getSchedule(selectedEventId); }
     catch { schedule = null; }
     finally { loading = false; }
@@ -35,23 +36,33 @@
     schedule = null;
   }
 
-  // Group entries by squad
-  const bySquad = $derived(() => {
-    if (!schedule) return [];
-    const map = new Map<string, { squadName: string; members: string[] }>();
-    for (const e of schedule.entries) {
-      if (!map.has(e.squad_id)) map.set(e.squad_id, { squadName: e.squad_name, members: [] });
-      map.get(e.squad_id)!.members.push(e.member_name);
-    }
-    return [...map.values()];
-  });
+  const pivot = $derived(() => schedule ? pivotSchedule(schedule) : { columns: [], rows: [] });
+
+  function handleExportCsv() {
+    if (!schedule) return;
+    const csv = generateCsv(pivot());
+    const name = schedule.event_name.replace(/\s+/g, '-').toLowerCase();
+    const filename = `escala-${name}-${schedule.event_date}.csv`;
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename; a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function handleCopy() {
+    if (!schedule) return;
+    const text = generateCopyText(pivot(), schedule.event_name);
+    await navigator.clipboard.writeText(text);
+    toast.success('Copiado!');
+  }
 </script>
 
 <div>
   <h1 style="font-size:var(--text-2xl);font-weight:700;margin-bottom:var(--space-6)">Escala</h1>
 
-  <div style="display:flex;gap:var(--space-3);align-items:flex-end;margin-bottom:var(--space-6)">
-    <div class="form-group" style="flex:1;max-width:300px">
+  <div style="display:flex;gap:var(--space-3);align-items:flex-end;flex-wrap:wrap;margin-bottom:var(--space-6)">
+    <div class="form-group" style="flex:1;max-width:320px">
       <label for="event-select">Evento</label>
       <select id="event-select" class="input" bind:value={selectedEventId} onchange={loadSchedule}>
         <option value="">Selecione um evento...</option>
@@ -66,26 +77,71 @@
     {/if}
   </div>
 
-  {#if loading}<p>Carregando...</p>
+  {#if !selectedEventId}
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:var(--space-16) 0;color:var(--text-muted);gap:var(--space-3)">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/>
+        <rect x="9" y="3" width="6" height="4" rx="1"/>
+        <line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/>
+      </svg>
+      <p style="font-size:var(--text-sm)">Selecione um evento para ver ou gerar a escala.</p>
+    </div>
+
+  {:else if loading}
+    <p style="color:var(--text-muted)">Carregando...</p>
+
   {:else if schedule}
     <div>
-      <h2 style="font-size:var(--text-lg);font-weight:600;margin-bottom:var(--space-4)">{schedule.event_name} — {schedule.event_date}</h2>
-      {#if bySquad().length === 0}
+      <h2 style="font-size:var(--text-lg);font-weight:600;margin-bottom:var(--space-4)">
+        {schedule.event_name} — {schedule.event_date}
+      </h2>
+
+      {#if pivot().rows.length === 0}
         <p style="color:var(--text-muted)">Escala vazia. Clique em "Gerar Escala" para criar.</p>
       {:else}
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:var(--space-4)">
-          {#each bySquad() as group}
-            <div class="card">
-              <h3 style="font-size:var(--text-sm);font-weight:700;margin-bottom:var(--space-3);color:var(--color-primary-600)">{group.squadName}</h3>
-              <ul style="list-style:none;display:flex;flex-direction:column;gap:var(--space-1)">
-                {#each group.members as name}<li style="font-size:var(--text-sm)">{name}</li>{/each}
-              </ul>
-            </div>
-          {/each}
+        <!-- Tabela cruzada Data × Squad -->
+        <div style="overflow-x:auto;margin-bottom:var(--space-6)">
+          <table style="width:100%;border-collapse:collapse;font-size:var(--text-sm)">
+            <thead>
+              <tr>
+                <th style="padding:var(--space-3) var(--space-4);text-align:left;background:var(--surface-2);border:1px solid var(--border);font-weight:700">Data</th>
+                {#each pivot().columns as col}
+                  <th style="padding:var(--space-3) var(--space-4);text-align:left;background:var(--surface-2);border:1px solid var(--border);font-weight:700;white-space:nowrap">{col}</th>
+                {/each}
+              </tr>
+            </thead>
+            <tbody>
+              {#each pivot().rows as row}
+                <tr>
+                  <td style="padding:var(--space-3) var(--space-4);border:1px solid var(--border);white-space:nowrap;font-weight:600">
+                    {row.eventDate.split('-').reverse().slice(0,2).join('/')}
+                  </td>
+                  {#each pivot().columns as col}
+                    <td style="padding:var(--space-3) var(--space-4);border:1px solid var(--border)">
+                      {#if row.squads[col]?.length}
+                        {row.squads[col].join(' · ')}
+                      {:else}
+                        <span style="color:var(--text-muted)">—</span>
+                      {/if}
+                    </td>
+                  {/each}
+                </tr>
+              {/each}
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Botões de export -->
+        <div style="display:flex;gap:var(--space-3);flex-wrap:wrap">
+          <button class="btn btn-secondary" onclick={handleCopy}>📋 Copiar</button>
+          <button class="btn btn-secondary" onclick={handleExportCsv}>📤 Exportar CSV</button>
+          <button class="btn btn-secondary" disabled title="Em breve">📄 Exportar PDF</button>
         </div>
       {/if}
     </div>
-  {:else if selectedEventId}
-    <p style="color:var(--text-muted)">Nenhuma escala para este evento ainda.</p>
+
+  {:else}
+    <p style="color:var(--text-muted)">Nenhuma escala para este evento ainda. Clique em "⚡ Gerar Escala".</p>
   {/if}
 </div>
+
