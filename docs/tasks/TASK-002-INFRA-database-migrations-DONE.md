@@ -1,7 +1,7 @@
 # TASK-002 — Migrations SQLite com SQLx + Seed de Desenvolvimento
 
 **Domínio:** INFRA  
-**Status:** WAITING  
+**Status:** DONE  
 **Prioridade:** P0 — bloqueia todos os CRUDs e o gerador  
 **Depende de:** TASK-001  
 **Estimativa:** M (2–6h)

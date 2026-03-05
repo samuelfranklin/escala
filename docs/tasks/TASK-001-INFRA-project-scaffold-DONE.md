@@ -1,7 +1,7 @@
 # TASK-001 — Scaffold do Projeto Tauri v2 + Svelte + Rust
 
 **Domínio:** INFRA  
-**Status:** WAITING  
+**Status:** DONE  
 **Prioridade:** P0 — bloqueia todas as demais tasks  
 **Depende de:** nenhuma  
 **Estimativa:** M (2–6h)

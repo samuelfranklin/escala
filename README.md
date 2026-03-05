@@ -99,3 +99,36 @@ Agentes especializados atuam em domínios específicos (backend, frontend, segur
 ## Licença
 
 MIT © Time de Mídia
+
+---
+
+## Pré-requisitos de Desenvolvimento
+
+### Linux (Ubuntu/Debian)
+
+```bash
+sudo apt install libwebkit2gtk-4.1-dev libgtk-3-dev \
+  libayatana-appindicator3-dev librsvg2-dev \
+  build-essential curl wget libssl-dev libxdo-dev
+```
+
+### macOS
+
+```bash
+xcode-select --install
+```
+
+### Windows
+
+Instale [Microsoft C++ Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/) e [WebView2](https://developer.microsoft.com/microsoft-edge/webview2/).
+
+### Todas as plataformas
+
+```bash
+# Instalar Rust
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+
+# Instalar dependências e rodar em dev
+npm install
+npm run tauri dev
+```
