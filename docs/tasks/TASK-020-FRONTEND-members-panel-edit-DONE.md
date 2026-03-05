@@ -1,7 +1,7 @@
 # TASK-020 — Tela de Membros: Painel Duplo, Edição e Rank Badge
 
 **Domínio:** FRONTEND  
-**Status:** WAITING  
+**Status:** DONE  
 **Prioridade:** P1 (alta — tela principal do app está incompleta)  
 **Depende de:** TASK-011 (members page base), TASK-019 (não bloqueia, mas fazer depois)  
 **Estimativa:** M (2–6h)
