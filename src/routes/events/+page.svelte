@@ -52,7 +52,7 @@
 
   async function handleSaveSquads() {
     if (!selectedEvent) return;
-    saving = true; error = '';
+    saving = true;
     try {
       const items: EventSquadDto[] = Object.entries(squadConfig)
         .filter(([, v]) => v.enabled)
@@ -98,12 +98,12 @@
   }
 </script>
 
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-6)">
+<div data-testid="events-page" style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-6)">
   <!-- Coluna esquerda: lista de eventos -->
   <div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-4)">
       <h1 style="font-size:var(--text-2xl);font-weight:700">Eventos</h1>
-      <button class="btn btn-primary" onclick={() => showModal = true}>+ Novo Evento</button>
+      <button class="btn btn-primary" data-testid="btn-new-event" onclick={() => showModal = true}>+ Novo Evento</button>
     </div>
 
     {#if loading}
@@ -114,6 +114,7 @@
       <div style="display:flex;flex-direction:column;gap:var(--space-2)">
         {#each events as e (e.id)}
           <div
+            data-testid="event-row"
             class="card"
             style="cursor:pointer;border-color:{selectedEvent?.id===e.id?'var(--color-primary-500)':'var(--surface-border)'}"
             onclick={() => selectEvent(e)}
@@ -201,10 +202,10 @@
 
 {#if showModal}
   <div style="position:fixed;inset:0;background:rgb(0 0 0/0.5);display:flex;align-items:center;justify-content:center;z-index:50">
-    <div class="card" style="width:400px">
+    <div class="card" role="dialog" aria-modal="true" style="width:400px">
       <h2 style="font-size:var(--text-lg);font-weight:600;margin-bottom:var(--space-4)">Novo Evento</h2>
       <div style="display:flex;flex-direction:column;gap:var(--space-3)">
-        <div class="form-group"><label for="ev-name">Nome *</label><input id="ev-name" class="input" bind:value={form.name} /></div>
+        <div class="form-group"><label for="ev-name">Nome *</label><input id="ev-name" name="name" class="input" bind:value={form.name} /></div>
         <div class="form-group"><label for="ev-date">Data *</label><input id="ev-date" class="input" type="date" bind:value={form.event_date} /></div>
         <div class="form-group"><label for="ev-type">Tipo</label>
           <select id="ev-type" class="input" bind:value={form.event_type}>
@@ -215,7 +216,7 @@
         </div>
         <div style="display:flex;gap:var(--space-3);justify-content:flex-end">
           <button class="btn btn-secondary" onclick={() => showModal = false}>Cancelar</button>
-          <button class="btn btn-primary" onclick={handleCreate}>Salvar</button>
+          <button class="btn btn-primary" data-testid="btn-save-event" onclick={handleCreate}>Salvar</button>
         </div>
       </div>
     </div>

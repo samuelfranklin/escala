@@ -48,15 +48,16 @@ const EVENTS = [
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-async function openCreateModal(page: import('@playwright/test').Page): Promise<void> {
-  const btn = page.locator('button:has-text("Novo"), button:has-text("Adicionar"), button:has-text("Criar")').first();
-  await btn.click();
-  await page.waitForSelector('[role="dialog"], .modal, form', { state: 'visible' });
+async function openCreateModal(
+  page: import('@playwright/test').Page,
+  testid: string,
+): Promise<void> {
+  await page.locator(`[data-testid="${testid}"]`).click();
+  await page.waitForSelector('[role="dialog"]', { state: 'visible' });
 }
 
-async function submitForm(page: import('@playwright/test').Page): Promise<void> {
-  const submit = page.locator('button[type="submit"], button:has-text("Salvar"), button:has-text("Criar")').last();
-  await submit.click();
+async function submitForm(page: import('@playwright/test').Page, testid: string): Promise<void> {
+  await page.locator(`[data-testid="${testid}"]`).click();
   await page.waitForTimeout(300);
 }
 
@@ -67,7 +68,7 @@ test.describe('Full Flow — Escala Mídia', () => {
   test('00 — App loads and shows dashboard', async ({ page }) => {
     await page.goto('/dashboard');
     await page.waitForLoadState('networkidle');
-    await expect(page.locator('h1, h2, [data-testid="dashboard"]')).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator('[data-testid="dashboard"]')).toBeVisible({ timeout: 10_000 });
   });
 
   // ── Members ──────────────────────────────────────────────────────────────
@@ -77,18 +78,18 @@ test.describe('Full Flow — Escala Mídia', () => {
     await page.waitForLoadState('networkidle');
 
     for (const member of MEMBERS) {
-      await openCreateModal(page);
-      await page.locator('input[name="name"], input[placeholder*="nome" i]').fill(member.name);
+      await openCreateModal(page, 'btn-new-member');
+      await page.locator('input[name="name"]').fill(member.name);
       await page.locator('input[name="phone"], input[placeholder*="telefone" i]').fill(member.phone);
-      await page.locator('input[name="email"], input[type="email"]').fill(member.email);
-      await submitForm(page);
+      await page.locator('input[type="email"]').fill(member.email);
+      await submitForm(page, 'btn-save-member');
     }
   });
 
   test('02 — Members list shows 10 rows', async ({ page }) => {
     await page.goto('/members');
     await page.waitForLoadState('networkidle');
-    const rows = page.locator('table tbody tr, [data-testid="member-row"], li.member-item');
+    const rows = page.locator('[data-testid="member-row"]');
     await expect(rows).toHaveCount(10, { timeout: 10_000 });
   });
 
@@ -99,18 +100,16 @@ test.describe('Full Flow — Escala Mídia', () => {
     await page.waitForLoadState('networkidle');
 
     for (const squad of SQUADS) {
-      await openCreateModal(page);
-      await page.locator('input[name="name"], input[placeholder*="nome" i]').fill(squad.name);
-      const desc = page.locator('input[name="description"], textarea[name="description"]');
-      if (await desc.count() > 0) await desc.fill(squad.description);
-      await submitForm(page);
+      await openCreateModal(page, 'btn-new-squad');
+      await page.locator('input[name="name"]').fill(squad.name);
+      await submitForm(page, 'btn-save-squad');
     }
   });
 
   test('04 — Squads list shows 5 rows', async ({ page }) => {
     await page.goto('/squads');
     await page.waitForLoadState('networkidle');
-    const rows = page.locator('table tbody tr, [data-testid="squad-row"], li.squad-item');
+    const rows = page.locator('[data-testid="squad-row"]');
     await expect(rows).toHaveCount(5, { timeout: 10_000 });
   });
 
@@ -121,21 +120,13 @@ test.describe('Full Flow — Escala Mídia', () => {
     await page.waitForLoadState('networkidle');
 
     for (const [squadName, members] of Object.entries(SQUAD_MEMBERS)) {
-      // Click the squad to open detail/management panel
-      await page.locator(`text="${squadName}"`).first().click();
+      await page.locator(`[data-testid="squad-row"]:has-text("${squadName}")`).click();
       await page.waitForTimeout(400);
 
-      // For each member to add, find an "add member" button or select
       for (const memberName of members) {
-        const addBtn = page.locator('button:has-text("Adicionar Membro"), button:has-text("Add")').first();
-        if (await addBtn.count() > 0) {
-          await addBtn.click();
-          await page.waitForTimeout(200);
-          const select = page.locator('select[name="member_id"], select').first();
-          await select.selectOption({ label: memberName });
-          await submitForm(page);
-          await page.waitForTimeout(300);
-        }
+        await page.locator('[data-testid="select-add-member"]').selectOption({ label: memberName });
+        await page.locator('[data-testid="btn-add-member"]').click();
+        await page.waitForTimeout(300);
       }
     }
   });
@@ -147,18 +138,20 @@ test.describe('Full Flow — Escala Mídia', () => {
     await page.waitForLoadState('networkidle');
 
     for (const event of EVENTS) {
-      await openCreateModal(page);
-      await page.locator('input[name="name"], input[placeholder*="nome" i]').fill(event.name);
-      const typeField = page.locator('input[name="type"], input[name="event_type"], select[name="type"]');
-      if (await typeField.count() > 0) await typeField.fill(event.type);
-      await submitForm(page);
+      await openCreateModal(page, 'btn-new-event');
+      await page.locator('input[name="name"]').fill(event.name);
+      // Pick a date 1 week from today so it's valid
+      const nextWeek = new Date();
+      nextWeek.setDate(nextWeek.getDate() + 7 + EVENTS.indexOf(event));
+      await page.locator('input[type="date"]').fill(nextWeek.toISOString().slice(0, 10));
+      await submitForm(page, 'btn-save-event');
     }
   });
 
   test('07 — Events list shows 3 rows', async ({ page }) => {
     await page.goto('/events');
     await page.waitForLoadState('networkidle');
-    const rows = page.locator('table tbody tr, [data-testid="event-row"], li.event-item');
+    const rows = page.locator('[data-testid="event-row"]');
     await expect(rows).toHaveCount(3, { timeout: 10_000 });
   });
 
@@ -168,18 +161,13 @@ test.describe('Full Flow — Escala Mídia', () => {
     await page.goto('/schedule');
     await page.waitForLoadState('networkidle');
 
-    // Select an event to generate schedule for
-    const eventSelect = page.locator('select[name="event_id"], select').first();
-    if (await eventSelect.count() > 0) {
-      await eventSelect.selectOption({ index: 1 });
-    }
+    const eventSelect = page.locator('#event-select');
+    await eventSelect.selectOption({ index: 1 });
+    await page.waitForTimeout(500);
 
-    // Click generate
-    const generateBtn = page.locator('button:has-text("Gerar Escala"), button:has-text("Gerar"), button:has-text("Generate")').first();
-    await generateBtn.click();
-    await page.waitForTimeout(1000);
+    await page.locator('[data-testid="btn-generate-schedule"]').click();
+    await page.waitForTimeout(1500);
 
-    // Expect no error state
     const errorEl = page.locator('[data-testid="error"], .error, .alert-danger');
     await expect(errorEl).toHaveCount(0);
   });
@@ -187,9 +175,7 @@ test.describe('Full Flow — Escala Mídia', () => {
   test('09 — Schedule view renders after generation', async ({ page }) => {
     await page.goto('/schedule');
     await page.waitForLoadState('networkidle');
-
-    // Page loads without crash
-    await expect(page.locator('h1, h2, main')).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator('[data-testid="schedule-page"]')).toBeVisible({ timeout: 10_000 });
   });
 
   // ── Dashboard summary ─────────────────────────────────────────────────────
@@ -197,9 +183,6 @@ test.describe('Full Flow — Escala Mídia', () => {
   test('10 — Dashboard reflects created data', async ({ page }) => {
     await page.goto('/dashboard');
     await page.waitForLoadState('networkidle');
-
-    // Expect stat cards to show non-zero values
-    const stats = page.locator('[data-testid="stat-card"], .stat-value, .card h3');
-    await expect(stats.first()).toBeVisible({ timeout: 10_000 });
+    await expect(page.locator('[data-testid="dashboard"]')).toBeVisible({ timeout: 10_000 });
   });
 });

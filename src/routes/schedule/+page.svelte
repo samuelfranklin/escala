@@ -58,7 +58,7 @@
   }
 </script>
 
-<div>
+<div data-testid="schedule-page">
   <h1 style="font-size:var(--text-2xl);font-weight:700;margin-bottom:var(--space-6)">Escala</h1>
 
   <div style="display:flex;gap:var(--space-3);align-items:flex-end;flex-wrap:wrap;margin-bottom:var(--space-6)">
@@ -69,7 +69,7 @@
         {#each events as e (e.id)}<option value={e.id}>{e.name} — {e.event_date}</option>{/each}
       </select>
     </div>
-    <button class="btn btn-primary" onclick={handleGenerate} disabled={!selectedEventId || generating}>
+    <button class="btn btn-primary" data-testid="btn-generate-schedule" onclick={handleGenerate} disabled={!selectedEventId || generating}>
       {generating ? 'Gerando...' : '⚡ Gerar Escala'}
     </button>
     {#if schedule}
@@ -133,8 +133,8 @@
 
         <!-- Botões de export -->
         <div style="display:flex;gap:var(--space-3);flex-wrap:wrap">
-          <button class="btn btn-secondary" onclick={handleCopy}>📋 Copiar</button>
-          <button class="btn btn-secondary" onclick={handleExportCsv}>📤 Exportar CSV</button>
+          <button class="btn btn-secondary" data-testid="btn-copy-schedule" onclick={handleCopy}>📋 Copiar</button>
+          <button class="btn btn-secondary" data-testid="btn-export-csv" onclick={handleExportCsv}>📤 Exportar CSV</button>
           <button class="btn btn-secondary" disabled title="Em breve">📄 Exportar PDF</button>
         </div>
       {/if}

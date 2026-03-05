@@ -52,7 +52,7 @@
   const activeMembers = $derived(() => members.filter(m => m.active).length);
 </script>
 
-<div>
+<div data-testid="dashboard">
   <h1 style="font-size:var(--text-2xl);font-weight:700;margin-bottom:var(--space-6)">Dashboard</h1>
 
   {#if loading}

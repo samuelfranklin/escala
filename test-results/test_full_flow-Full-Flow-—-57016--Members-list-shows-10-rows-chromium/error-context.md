@@ -1,17 +1,50 @@
 # Page snapshot
 
 ```yaml
-- generic [ref=e4]:
-  - generic [ref=e5]: "[plugin:vite-plugin-svelte] /home/samuel/projects/escala/src/routes/members/+page.svelte:238:23 Expected a valid element or component name. Components must have a valid variable name or dot notation expression https://svelte.dev/e/tag_invalid_name"
-  - generic [ref=e6]: /home/samuel/projects/escala/src/routes/members/+page.svelte:238:23
-  - generic [ref=e7]: 236 | 237 | 238 | let members = $state<Member[]>([]); ^ 239 | let loading = $state(true); 240 | let search = $state('');
-  - generic [ref=e8]:
-    - text: Click outside, press Esc key, or fix the code to dismiss.
-    - text: You can also disable this overlay by setting
-    - code [ref=e9]: server.hmr.overlay
-    - text: to
-    - code [ref=e10]: "false"
-    - text: in
-    - code [ref=e11]: vite.config.js
-    - text: .
+- generic [ref=e3]:
+  - complementary [ref=e4]:
+    - generic [ref=e5]:
+      - generic [ref=e6]: 🎬
+      - generic [ref=e7]: Escala Mídia
+    - navigation "Navegação principal" [ref=e8]:
+      - link "Dashboard" [ref=e9] [cursor=pointer]:
+        - /url: /dashboard
+        - generic [ref=e10]: ◉
+        - generic [ref=e11]: Dashboard
+      - link "Membros" [ref=e12] [cursor=pointer]:
+        - /url: /members
+        - generic [ref=e13]: 👥
+        - generic [ref=e14]: Membros
+      - link "Times" [ref=e15] [cursor=pointer]:
+        - /url: /squads
+        - generic [ref=e16]: 🏷️
+        - generic [ref=e17]: Times
+      - link "Eventos" [ref=e18] [cursor=pointer]:
+        - /url: /events
+        - generic [ref=e19]: 📅
+        - generic [ref=e20]: Eventos
+      - link "Escala" [ref=e21] [cursor=pointer]:
+        - /url: /schedule
+        - generic [ref=e22]: 📋
+        - generic [ref=e23]: Escala
+      - link "Disponibilidade" [ref=e24] [cursor=pointer]:
+        - /url: /availability
+        - generic [ref=e25]: 🗓️
+        - generic [ref=e26]: Disponibilidade
+      - link "Casais" [ref=e27] [cursor=pointer]:
+        - /url: /couples
+        - generic [ref=e28]: 💑
+        - generic [ref=e29]: Casais
+  - main [ref=e30]:
+    - generic [ref=e31]:
+      - generic [ref=e32]:
+        - generic [ref=e33]:
+          - heading "Membros" [level=1] [ref=e34]
+          - button "+ Novo" [ref=e35] [cursor=pointer]
+        - searchbox "Buscar membro..." [ref=e36]
+        - generic [ref=e37]:
+          - paragraph [ref=e38]: 👥
+          - paragraph [ref=e39]: Nenhum membro encontrado.
+          - button "+ Novo Membro" [ref=e40] [cursor=pointer]
+      - paragraph [ref=e42]: Selecione um membro para ver os detalhes.
 ```

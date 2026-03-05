@@ -81,12 +81,12 @@
   }
 </script>
 
-<div style="display:grid;grid-template-columns:360px 1fr;gap:var(--space-6)">
+<div data-testid="members-page" style="display:grid;grid-template-columns:360px 1fr;gap:var(--space-6)">
   <!-- Coluna esquerda: lista -->
   <div>
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-4)">
       <h1 style="font-size:var(--text-2xl);font-weight:700">Membros</h1>
-      <button class="btn btn-primary" onclick={() => showModal = true}>+ Novo</button>
+      <button class="btn btn-primary" data-testid="btn-new-member" onclick={() => showModal = true}>+ Novo</button>
     </div>
 
     <input class="input" style="margin-bottom:var(--space-3)" type="search" placeholder="Buscar membro..." bind:value={search} />
@@ -103,6 +103,7 @@
       <div style="display:flex;flex-direction:column;gap:var(--space-2)">
         {#each filtered as m (m.id)}
           <div
+            data-testid="member-row"
             class="card"
             style="cursor:pointer;padding:var(--space-3);opacity:{m.active?1:0.5};border-color:{selectedMember?.id===m.id?'var(--color-primary-500)':'var(--surface-border)'}"
             onclick={() => selectMember(m)}
@@ -204,10 +205,10 @@
 <!-- Modal de criação -->
 {#if showModal}
   <div style="position:fixed;inset:0;background:rgb(0 0 0/0.5);display:flex;align-items:center;justify-content:center;z-index:50">
-    <div class="card" style="width:400px">
+    <div class="card" role="dialog" aria-modal="true" style="width:400px">
       <h2 style="font-size:var(--text-lg);font-weight:600;margin-bottom:var(--space-4)">Novo Membro</h2>
       <div style="display:flex;flex-direction:column;gap:var(--space-3)">
-        <div class="form-group"><label for="name">Nome *</label><input id="name" class="input" bind:value={form.name} /></div>
+        <div class="form-group"><label for="name">Nome *</label><input id="name" name="name" class="input" bind:value={form.name} /></div>
         <div class="form-group"><label for="email">Email</label><input id="email" class="input" type="email" bind:value={form.email} /></div>
         <div class="form-group">
           <label for="phone">Telefone</label>
@@ -227,7 +228,7 @@
         </div>
         <div style="display:flex;gap:var(--space-3);justify-content:flex-end">
           <button class="btn btn-secondary" onclick={() => showModal = false}>Cancelar</button>
-          <button class="btn btn-primary" onclick={handleCreate}>Salvar</button>
+          <button class="btn btn-primary" data-testid="btn-save-member" onclick={handleCreate}>Salvar</button>
         </div>
       </div>
     </div>
