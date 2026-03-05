@@ -28,6 +28,10 @@ target/
 *.db-shm
 *.db-wal
 backup_*.db
+
+# Playwright test artifacts
+test-results/
+playwright-report/
 escala_debug.log
 
 # Tauri
