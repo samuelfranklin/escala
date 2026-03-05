@@ -4,19 +4,22 @@ pub mod errors;
 pub mod models;
 pub mod services;
 
-use sqlx::{sqlite::SqlitePoolOptions, SqlitePool};
+use sqlx::{sqlite::SqliteConnectOptions, sqlite::SqlitePoolOptions, SqlitePool};
+use std::str::FromStr;
+use tauri::Manager;
 
 pub struct AppState {
     pub db: SqlitePool,
 }
 
-async fn create_db_pool() -> SqlitePool {
-    let database_url = std::env::var("DATABASE_URL")
-        .unwrap_or_else(|_| "sqlite://escala.db".to_string());
+async fn create_db_pool(db_url: &str) -> SqlitePool {
+    let opts = SqliteConnectOptions::from_str(db_url)
+        .expect("Invalid DATABASE_URL")
+        .create_if_missing(true);
 
     let pool = SqlitePoolOptions::new()
         .max_connections(5)
-        .connect(&database_url)
+        .connect_with(opts)
         .await
         .expect("Failed to connect to SQLite database");
 
@@ -30,12 +33,26 @@ async fn create_db_pool() -> SqlitePool {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    let rt = tokio::runtime::Runtime::new().expect("Failed to create tokio runtime");
-    let pool = rt.block_on(create_db_pool());
-
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
-        .manage(AppState { db: pool })
+        .setup(|app| {
+            // Resolve database path: env var takes priority (CI/dev),
+            // otherwise use Tauri's app data directory.
+            let db_url = if let Ok(url) = std::env::var("DATABASE_URL") {
+                url
+            } else {
+                let data_dir = app.path().app_data_dir()
+                    .expect("Failed to resolve app data directory");
+                std::fs::create_dir_all(&data_dir)
+                    .expect("Failed to create app data directory");
+                format!("sqlite://{}", data_dir.join("escala.db").display())
+            };
+
+            let rt = tokio::runtime::Runtime::new().expect("Failed to create tokio runtime");
+            let pool = rt.block_on(create_db_pool(&db_url));
+            app.manage(AppState { db: pool });
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             // Member
             commands::member::get_members,
