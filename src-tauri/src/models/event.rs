@@ -4,8 +4,12 @@ use serde::{Deserialize, Serialize};
 pub struct Event {
     pub id: String,
     pub name: String,
-    pub event_date: String,
+    pub event_date: Option<String>,
     pub event_type: String,
+    /// 0=Dom, 1=Seg, 2=Ter, 3=Qua, 4=Qui, 5=Sex, 6=Sáb — usado em eventos regulares
+    pub day_of_week: Option<i64>,
+    /// Frequência: weekly, biweekly, monthly_1..4 — usado em eventos regulares
+    pub recurrence: Option<String>,
     pub notes: Option<String>,
     pub created_at: String,
     pub updated_at: String,
@@ -31,8 +35,11 @@ pub struct EventSquadDto {
 #[derive(Debug, Deserialize)]
 pub struct CreateEventDto {
     pub name: String,
-    pub event_date: String,
+    /// Obrigatório para eventos especiais e treinamentos; None para regulares
+    pub event_date: Option<String>,
     pub event_type: Option<String>,
+    pub day_of_week: Option<i64>,
+    pub recurrence: Option<String>,
     pub notes: Option<String>,
 }
 
@@ -41,5 +48,7 @@ pub struct UpdateEventDto {
     pub name: Option<String>,
     pub event_date: Option<String>,
     pub event_type: Option<String>,
+    pub day_of_week: Option<i64>,
+    pub recurrence: Option<String>,
     pub notes: Option<String>,
 }

@@ -43,12 +43,18 @@ export interface CreateSquadDto { name: string; description?: string; }
 export interface UpdateSquadDto { name?: string; description?: string; }
 
 export type EventType = 'regular' | 'special' | 'training';
+export type RecurrenceType = 'weekly' | 'biweekly' | 'monthly_1' | 'monthly_2' | 'monthly_3' | 'monthly_4';
 
 export interface Event {
   id: string;
   name: string;
-  event_date: string;
+  /** Presente apenas para eventos especiais/treinamentos */
+  event_date: string | null;
   event_type: EventType;
+  /** 0=Dom, 1=Seg, 2=Ter, 3=Qua, 4=Qui, 5=Sex, 6=Sáb — apenas para eventos regulares */
+  day_of_week: number | null;
+  /** Frequência de recorrência — apenas para eventos regulares */
+  recurrence: RecurrenceType | null;
   notes: string | null;
   created_at: string;
   updated_at: string;
@@ -56,8 +62,11 @@ export interface Event {
 
 export interface CreateEventDto {
   name: string;
-  event_date: string;
+  /** Obrigatório para special/training; omitir para regular */
+  event_date?: string;
   event_type?: EventType;
+  day_of_week?: number;
+  recurrence?: RecurrenceType;
   notes?: string;
 }
 
@@ -65,6 +74,8 @@ export interface UpdateEventDto {
   name?: string;
   event_date?: string;
   event_type?: EventType;
+  day_of_week?: number;
+  recurrence?: RecurrenceType;
   notes?: string;
 }
 
@@ -92,7 +103,7 @@ export interface ScheduleEntryView {
 export interface ScheduleView {
   event_id: string;
   event_name: string;
-  event_date: string;
+  event_date: string | null;
   entries: ScheduleEntryView[];
 }
 

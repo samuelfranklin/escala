@@ -42,7 +42,7 @@
     if (!schedule) return;
     const csv = generateCsv(pivot());
     const name = schedule.event_name.replace(/\s+/g, '-').toLowerCase();
-    const filename = `escala-${name}-${schedule.event_date}.csv`;
+    const filename = `escala-${name}-${schedule.event_date ?? 'recorrente'}.csv`;
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -66,7 +66,7 @@
       <label for="event-select">Evento</label>
       <select id="event-select" class="input" bind:value={selectedEventId} onchange={loadSchedule}>
         <option value="">Selecione um evento...</option>
-        {#each events as e (e.id)}<option value={e.id}>{e.name} — {e.event_date}</option>{/each}
+        {#each events as e (e.id)}<option value={e.id}>{e.name} — {e.event_date ?? 'recorrente'}</option>{/each}
       </select>
     </div>
     <button class="btn btn-primary" data-testid="btn-generate-schedule" onclick={handleGenerate} disabled={!selectedEventId || generating}>
@@ -93,7 +93,7 @@
   {:else if schedule}
     <div>
       <h2 style="font-size:var(--text-lg);font-weight:600;margin-bottom:var(--space-4)">
-        {schedule.event_name} — {schedule.event_date}
+        {schedule.event_name} — {schedule.event_date ?? 'recorrente'}
       </h2>
 
       {#if pivot().rows.length === 0}

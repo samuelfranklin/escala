@@ -4,13 +4,13 @@ use uuid::Uuid;
 
 pub async fn list_all(pool: &SqlitePool) -> Result<Vec<Event>, AppError> {
     sqlx::query_as!(Event,
-        r#"SELECT id as "id!", name as "name!", event_date as "event_date!", event_type as "event_type!", notes, created_at as "created_at!", updated_at as "updated_at!" FROM events ORDER BY event_date DESC"#)
+        r#"SELECT id as "id!", name as "name!", event_date, event_type as "event_type!", day_of_week, recurrence, notes, created_at as "created_at!", updated_at as "updated_at!" FROM events ORDER BY event_date DESC NULLS LAST, name ASC"#)
         .fetch_all(pool).await.map_err(AppError::from)
 }
 
 pub async fn get_by_id(pool: &SqlitePool, id: &str) -> Result<Event, AppError> {
     sqlx::query_as!(Event,
-        r#"SELECT id as "id!", name as "name!", event_date as "event_date!", event_type as "event_type!", notes, created_at as "created_at!", updated_at as "updated_at!" FROM events WHERE id = ?"#, id)
+        r#"SELECT id as "id!", name as "name!", event_date, event_type as "event_type!", day_of_week, recurrence, notes, created_at as "created_at!", updated_at as "updated_at!" FROM events WHERE id = ?"#, id)
         .fetch_optional(pool).await.map_err(AppError::from)?
         .ok_or_else(|| AppError::NotFound(format!("Event '{}' not found", id)))
 }
@@ -18,8 +18,9 @@ pub async fn get_by_id(pool: &SqlitePool, id: &str) -> Result<Event, AppError> {
 pub async fn create(pool: &SqlitePool, dto: CreateEventDto) -> Result<Event, AppError> {
     let id = Uuid::new_v4().to_string().replace('-', "");
     let event_type = dto.event_type.unwrap_or_else(|| "regular".into());
-    sqlx::query!("INSERT INTO events (id, name, event_date, event_type, notes) VALUES (?, ?, ?, ?, ?)",
-        id, dto.name, dto.event_date, event_type, dto.notes)
+    sqlx::query!(
+        "INSERT INTO events (id, name, event_date, event_type, day_of_week, recurrence, notes) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        id, dto.name, dto.event_date, event_type, dto.day_of_week, dto.recurrence, dto.notes)
         .execute(pool).await.map_err(AppError::from)?;
     get_by_id(pool, &id).await
 }
@@ -29,6 +30,8 @@ pub async fn update(pool: &SqlitePool, id: &str, dto: UpdateEventDto) -> Result<
     if let Some(v) = &dto.name       { sets.push(format!("name = '{}'", v.replace('\'', "''"))) }
     if let Some(v) = &dto.event_date { sets.push(format!("event_date = '{}'", v)) }
     if let Some(v) = &dto.event_type { sets.push(format!("event_type = '{}'", v)) }
+    if let Some(v) = dto.day_of_week { sets.push(format!("day_of_week = {}", v)) }
+    if let Some(v) = &dto.recurrence { sets.push(format!("recurrence = '{}'", v)) }
     if let Some(v) = &dto.notes      { sets.push(format!("notes = '{}'", v.replace('\'', "''"))) }
     let sql = format!("UPDATE events SET {} WHERE id = '{}'", sets.join(", "), id);
     let rows = sqlx::query(&sql).execute(pool).await.map_err(AppError::from)?.rows_affected();

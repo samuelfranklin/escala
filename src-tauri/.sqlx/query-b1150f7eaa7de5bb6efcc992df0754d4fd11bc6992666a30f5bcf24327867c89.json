@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT id as \"id!\", name as \"name!\", event_date as \"event_date!\", event_type as \"event_type!\", notes, created_at as \"created_at!\", updated_at as \"updated_at!\" FROM events ORDER BY event_date DESC",
+  "query": "SELECT id as \"id!\", name as \"name!\", event_date, event_type as \"event_type!\", day_of_week, recurrence, notes, created_at as \"created_at!\", updated_at as \"updated_at!\" FROM events WHERE id = ?",
   "describe": {
     "columns": [
       {
@@ -14,7 +14,7 @@
         "type_info": "Text"
       },
       {
-        "name": "event_date!",
+        "name": "event_date",
         "ordinal": 2,
         "type_info": "Text"
       },
@@ -24,33 +24,45 @@
         "type_info": "Text"
       },
       {
-        "name": "notes",
+        "name": "day_of_week",
         "ordinal": 4,
-        "type_info": "Text"
+        "type_info": "Integer"
       },
       {
-        "name": "created_at!",
+        "name": "recurrence",
         "ordinal": 5,
         "type_info": "Text"
       },
       {
-        "name": "updated_at!",
+        "name": "notes",
         "ordinal": 6,
+        "type_info": "Text"
+      },
+      {
+        "name": "created_at!",
+        "ordinal": 7,
+        "type_info": "Text"
+      },
+      {
+        "name": "updated_at!",
+        "ordinal": 8,
         "type_info": "Text"
       }
     ],
     "parameters": {
-      "Right": 0
+      "Right": 1
     },
     "nullable": [
       true,
       false,
+      true,
       false,
-      false,
+      true,
+      true,
       true,
       false,
       false
     ]
   },
-  "hash": "d9e22fa93510619f1706c858406c1988190ab93adb7664d2e5684a1c9d6ad136"
+  "hash": "b1150f7eaa7de5bb6efcc992df0754d4fd11bc6992666a30f5bcf24327867c89"
 }

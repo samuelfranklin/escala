@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT id as \"id!\", name as \"name!\", event_date as \"event_date!\" FROM events WHERE id = ?",
+  "query": "SELECT id as \"id!\", name as \"name!\", event_date FROM events WHERE id = ?",
   "describe": {
     "columns": [
       {
@@ -14,7 +14,7 @@
         "type_info": "Text"
       },
       {
-        "name": "event_date!",
+        "name": "event_date",
         "ordinal": 2,
         "type_info": "Text"
       }
@@ -25,8 +25,8 @@
     "nullable": [
       true,
       false,
-      false
+      true
     ]
   },
-  "hash": "5bec340a17a5b1a66e267ecb54a63ab7d8f39c898271348474b45a5f32234c93"
+  "hash": "7db4ccf6359d2eca164b3056de3c352475183537975c85ff81b74c59544e5272"
 }

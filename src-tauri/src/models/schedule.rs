@@ -13,7 +13,7 @@ pub struct ScheduleEntry {
 pub struct ScheduleView {
     pub event_id: String,
     pub event_name: String,
-    pub event_date: String,
+    pub event_date: Option<String>,
     pub entries: Vec<ScheduleEntryView>,
 }
 

@@ -6,7 +6,13 @@ pub async fn get_event(pool: &SqlitePool, id: &str) -> Result<Event, AppError> {
 
 pub async fn create_event(pool: &SqlitePool, dto: CreateEventDto) -> Result<Event, AppError> {
     if dto.name.trim().is_empty() { return Err(AppError::Validation("Name cannot be empty".into())); }
-    if dto.event_date.trim().is_empty() { return Err(AppError::Validation("Event date cannot be empty".into())); }
+    let event_type = dto.event_type.as_deref().unwrap_or("regular");
+    if event_type == "regular" {
+        if dto.day_of_week.is_none() { return Err(AppError::Validation("day_of_week is required for regular events".into())); }
+        if dto.recurrence.is_none()  { return Err(AppError::Validation("recurrence is required for regular events".into())); }
+    } else if dto.event_date.as_deref().map(|d| d.trim().is_empty()).unwrap_or(true) {
+        return Err(AppError::Validation("event_date is required for special/training events".into()));
+    }
     event_repo::create(pool, dto).await
 }
 
@@ -55,8 +61,10 @@ mod tests {
     async fn create_test_event(pool: &SqlitePool) -> Event {
         create_event(pool, CreateEventDto {
             name: "Culto Teste".into(),
-            event_date: "2026-03-08".into(),
-            event_type: None,
+            event_date: Some("2026-03-08".into()),
+            event_type: Some("special".into()),
+            day_of_week: None,
+            recurrence: None,
             notes: None,
         }).await.unwrap()
     }

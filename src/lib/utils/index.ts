@@ -17,13 +17,14 @@ export interface SchedulePivot {
 export function pivotSchedule(view: ScheduleView): { columns: string[]; rows: SchedulePivot[] } {
   if (!view.entries.length) return { columns: [], rows: [] };
 
+  const eventDate = view.event_date ?? 'recorrente';
   const columnsSet: string[] = [];
   const rowMap = new Map<string, Record<string, string[]>>();
 
   for (const entry of view.entries) {
     if (!columnsSet.includes(entry.squad_name)) columnsSet.push(entry.squad_name);
-    if (!rowMap.has(view.event_date)) rowMap.set(view.event_date, {});
-    const row = rowMap.get(view.event_date)!;
+    if (!rowMap.has(eventDate)) rowMap.set(eventDate, {});
+    const row = rowMap.get(eventDate)!;
     if (!row[entry.squad_name]) row[entry.squad_name] = [];
     row[entry.squad_name].push(entry.member_name);
   }
@@ -77,12 +78,12 @@ export function formatDateLong(iso: string): string {
   });
 }
 
-export function getNextEvent<T extends { event_date: string }>(
+export function getNextEvent<T extends { event_date: string | null }>(
   events: T[],
   today: string
 ): T | null {
   const future = events
-    .filter(e => e.event_date >= today)
-    .sort((a, b) => a.event_date.localeCompare(b.event_date));
+    .filter(e => e.event_date !== null && e.event_date >= today)
+    .sort((a, b) => a.event_date!.localeCompare(b.event_date!));
   return future[0] ?? null;
 }

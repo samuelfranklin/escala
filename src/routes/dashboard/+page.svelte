@@ -26,7 +26,7 @@
     squads = ss;
     events = es;
 
-    eventsThisMonth = es.filter(e => e.event_date.startsWith(thisMonth)).length;
+    eventsThisMonth = es.filter(e => e.event_date?.startsWith(thisMonth)).length;
     nextEvent = getNextEvent(es, today);
 
     // Squads com membros
@@ -111,7 +111,7 @@
         <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:var(--space-4)">
           <div>
             <p style="font-size:var(--text-lg);font-weight:700">{nextEvent.name}</p>
-            <p style="font-size:var(--text-sm);color:var(--text-muted);margin-top:2px">{formatDateLong(nextEvent.event_date)}</p>
+            <p style="font-size:var(--text-sm);color:var(--text-muted);margin-top:2px">{nextEvent.event_date ? formatDateLong(nextEvent.event_date) : ''}</p>
             <span class="badge badge-blue" style="margin-top:var(--space-2)">{nextEvent.event_type}</span>
           </div>
           {#if nextEventSquads.length > 0}

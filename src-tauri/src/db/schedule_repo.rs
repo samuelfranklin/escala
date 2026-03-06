@@ -4,7 +4,7 @@ use uuid::Uuid;
 
 pub async fn get_by_event(pool: &SqlitePool, event_id: &str) -> Result<ScheduleView, AppError> {
     let event = sqlx::query!(
-        r#"SELECT id as "id!", name as "name!", event_date as "event_date!" FROM events WHERE id = ?"#, event_id)
+        r#"SELECT id as "id!", name as "name!", event_date FROM events WHERE id = ?"#, event_id)
         .fetch_optional(pool).await.map_err(AppError::from)?
         .ok_or_else(|| AppError::NotFound(format!("Event '{}' not found", event_id)))?;
 
