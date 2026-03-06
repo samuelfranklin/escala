@@ -81,40 +81,39 @@
   }
 </script>
 
-<div data-testid="members-page" style="display:grid;grid-template-columns:360px 1fr;gap:var(--space-6)">
+<div data-testid="members-page" class="grid grid-cols-[360px_1fr] gap-6">
   <!-- Coluna esquerda: lista -->
   <div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-4)">
-      <h1 style="font-size:var(--text-2xl);font-weight:700">Membros</h1>
+    <div class="flex justify-between items-center mb-4">
+      <h1 class="text-2xl font-bold">Membros</h1>
       <button class="btn btn-primary" data-testid="btn-new-member" onclick={() => showModal = true}>+ Novo</button>
     </div>
 
-    <input class="input" style="margin-bottom:var(--space-3)" type="search" placeholder="Buscar membro..." bind:value={search} />
+    <input class="input mb-3" type="search" placeholder="Buscar membro..." bind:value={search} />
 
     {#if loading}
       <p>Carregando...</p>
     {:else if filtered.length === 0}
-      <div style="text-align:center;padding:var(--space-8);color:var(--text-muted)">
-        <p style="font-size:var(--text-3xl);margin-bottom:var(--space-2)">👥</p>
+      <div class="text-center p-8 text-slate-500">
+        <p class="text-3xl mb-2">👥</p>
         <p>Nenhum membro encontrado.</p>
-        <button class="btn btn-primary" style="margin-top:var(--space-3)" onclick={() => showModal = true}>+ Novo Membro</button>
+        <button class="btn btn-primary mt-3" onclick={() => showModal = true}>+ Novo Membro</button>
       </div>
     {:else}
-      <div style="display:flex;flex-direction:column;gap:var(--space-2)">
+      <div class="flex flex-col gap-2">
         {#each filtered as m (m.id)}
           <div
             data-testid="member-row"
-            class="card"
-            style="cursor:pointer;padding:var(--space-3);opacity:{m.active?1:0.5};border-color:{selectedMember?.id===m.id?'var(--color-primary-500)':'var(--surface-border)'}"
+            class="card cursor-pointer p-3 {m.active ? '' : 'opacity-50'} {selectedMember?.id===m.id ? 'ring-2 ring-blue-500' : ''}"
             onclick={() => selectMember(m)}
           >
-            <div style="display:flex;justify-content:space-between;align-items:center">
-              <strong style="font-size:var(--text-sm)">{m.name}</strong>
+            <div class="flex justify-between items-center">
+              <strong class="text-sm">{m.name}</strong>
               <span style="background:{RANK_COLORS[m.rank]}22;color:{RANK_COLORS[m.rank]};padding:2px 8px;border-radius:12px;font-size:var(--text-xs);font-weight:600">
                 {RANK_LABELS[m.rank] ?? m.rank}
               </span>
             </div>
-            {#if !m.active}<p style="font-size:var(--text-xs);color:var(--color-danger-500);margin-top:2px">Inativo</p>{/if}
+            {#if !m.active}<p class="text-xs text-red-500 mt-0.5">Inativo</p>{/if}
           </div>
         {/each}
       </div>
@@ -126,8 +125,8 @@
     <div>
       {#if editing}
         <!-- Formulário de edição inline -->
-        <h2 style="font-size:var(--text-xl);font-weight:600;margin-bottom:var(--space-4)">Editar Membro</h2>
-        <div style="display:flex;flex-direction:column;gap:var(--space-3);max-width:400px">
+        <h2 class="text-xl font-semibold mb-4">Editar Membro</h2>
+        <div class="flex flex-col gap-3 max-w-[400px]">
           <div class="form-group"><label for="edit-name">Nome *</label><input id="edit-name" class="input" bind:value={editForm.name} /></div>
           <div class="form-group"><label for="edit-email">Email</label><input id="edit-email" class="input" type="email" bind:value={editForm.email} /></div>
           <div class="form-group">
@@ -146,47 +145,47 @@
               <option value="leader">Líder</option>
             </select>
           </div>
-          <div style="display:flex;gap:var(--space-3)">
+          <div class="flex gap-3">
             <button class="btn btn-primary" onclick={handleUpdate}>Salvar</button>
             <button class="btn btn-secondary" onclick={() => editing = false}>Cancelar</button>
           </div>
         </div>
       {:else}
         <!-- Painel de detalhes -->
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:var(--space-4)">
+        <div class="flex justify-between items-start mb-4">
           <div>
-            <h2 style="font-size:var(--text-xl);font-weight:700">{selectedMember.name}</h2>
+            <h2 class="text-xl font-bold">{selectedMember.name}</h2>
             <span style="background:{RANK_COLORS[selectedMember.rank]}22;color:{RANK_COLORS[selectedMember.rank]};padding:3px 10px;border-radius:12px;font-size:var(--text-sm);font-weight:600;display:inline-block;margin-top:var(--space-1)">
               {RANK_LABELS[selectedMember.rank] ?? selectedMember.rank}
             </span>
             {#if !selectedMember.active}
-              <span class="badge badge-red" style="margin-left:var(--space-2)">Inativo</span>
+              <span class="badge badge-red ml-2">Inativo</span>
             {/if}
           </div>
-          <div style="display:flex;gap:var(--space-2)">
+          <div class="flex gap-2">
             <button class="btn btn-secondary btn-sm" onclick={() => startEdit(selectedMember!)}>✏ Editar</button>
             <button class="btn btn-danger btn-sm" onclick={() => handleDelete(selectedMember!.id)}>🗑 Remover</button>
           </div>
         </div>
 
-        <div style="display:flex;flex-direction:column;gap:var(--space-2);margin-bottom:var(--space-6)">
+        <div class="flex flex-col gap-2 mb-6">
           {#if selectedMember.phone}
-            <p style="font-size:var(--text-sm)">📞 {selectedMember.phone}</p>
+            <p class="text-sm">📞 {selectedMember.phone}</p>
           {/if}
           {#if selectedMember.email}
-            <p style="font-size:var(--text-sm)">✉ {selectedMember.email}</p>
+            <p class="text-sm">✉ {selectedMember.email}</p>
           {/if}
           {#if selectedMember.instagram}
-            <p style="font-size:var(--text-sm)">📷 {selectedMember.instagram}</p>
+            <p class="text-sm">📷 {selectedMember.instagram}</p>
           {/if}
         </div>
 
         <div>
-          <p style="font-size:var(--text-sm);font-weight:600;color:var(--text-muted);margin-bottom:var(--space-2)">TIMES</p>
+          <p class="text-sm font-semibold text-slate-500 mb-2">TIMES</p>
           {#if memberSquads.length === 0}
-            <p style="font-size:var(--text-sm);color:var(--text-muted)">Sem times associados.</p>
+            <p class="text-sm text-slate-500">Sem times associados.</p>
           {:else}
-            <div style="display:flex;gap:var(--space-2);flex-wrap:wrap">
+            <div class="flex gap-2 flex-wrap">
               {#each memberSquads as sq (sq.id)}
                 <span class="badge badge-blue">{sq.name}</span>
               {/each}
@@ -196,7 +195,7 @@
       {/if}
     </div>
   {:else}
-    <div style="display:flex;align-items:center;justify-content:center;color:var(--text-muted)">
+    <div class="flex items-center justify-center text-slate-500">
       <p>Selecione um membro para ver os detalhes.</p>
     </div>
   {/if}
@@ -204,10 +203,10 @@
 
 <!-- Modal de criação -->
 {#if showModal}
-  <div style="position:fixed;inset:0;background:rgb(0 0 0/0.5);display:flex;align-items:center;justify-content:center;z-index:50">
-    <div class="card" role="dialog" aria-modal="true" style="width:400px">
-      <h2 style="font-size:var(--text-lg);font-weight:600;margin-bottom:var(--space-4)">Novo Membro</h2>
-      <div style="display:flex;flex-direction:column;gap:var(--space-3)">
+  <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div class="card w-[400px]" role="dialog" aria-modal="true">
+      <h2 class="text-lg font-semibold mb-4">Novo Membro</h2>
+      <div class="flex flex-col gap-3">
         <div class="form-group"><label for="name">Nome *</label><input id="name" name="name" class="input" bind:value={form.name} /></div>
         <div class="form-group"><label for="email">Email</label><input id="email" class="input" type="email" bind:value={form.email} /></div>
         <div class="form-group">
@@ -226,7 +225,7 @@
             <option value="leader">Líder</option>
           </select>
         </div>
-        <div style="display:flex;gap:var(--space-3);justify-content:flex-end">
+        <div class="flex gap-3 justify-end">
           <button class="btn btn-secondary" onclick={() => showModal = false}>Cancelar</button>
           <button class="btn btn-primary" data-testid="btn-save-member" onclick={handleCreate}>Salvar</button>
         </div>

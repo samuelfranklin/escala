@@ -14,62 +14,29 @@
   ];
 </script>
 
-<div class="app-shell">
-  <aside class="sidebar">
-    <div class="sidebar-header">
-      <span class="sidebar-logo">🎬</span>
-      <span class="sidebar-title">Escala Mídia</span>
+<div class="grid grid-cols-[var(--sidebar-width)_1fr] min-h-screen">
+  <aside class="bg-[var(--surface-sidebar)] text-white flex flex-col sticky top-0 h-screen overflow-y-auto">
+    <div class="flex items-center gap-3 px-4 py-6 border-b border-white/10">
+      <span class="text-xl">🎬</span>
+      <span class="font-bold text-sm">Escala Mídia</span>
     </div>
-    <nav class="sidebar-nav" aria-label="Navegação principal">
+    <nav class="flex flex-col py-4 px-2 gap-1" aria-label="Navegação principal">
       {#each navItems as item}
         <a
           href={item.href}
-          class="nav-item"
-          class:active={$page.url.pathname.startsWith(item.href)}
+          class="flex items-center gap-3 px-3 py-2 rounded-md text-sm no-underline transition-all {$page.url.pathname.startsWith(item.href) ? 'bg-blue-600 text-white' : 'text-white/70 hover:bg-white/10 hover:text-white'}"
           aria-current={$page.url.pathname.startsWith(item.href) ? 'page' : undefined}
         >
-          <span class="nav-icon" aria-hidden="true">{item.icon}</span>
-          <span class="nav-label">{item.label}</span>
+          <span aria-hidden="true">{item.icon}</span>
+          <span>{item.label}</span>
         </a>
       {/each}
     </nav>
   </aside>
 
-  <main class="main-content" id="main">
+  <main class="p-8 overflow-y-auto" id="main">
     <slot />
   </main>
 </div>
 
 <ToastContainer />
-
-<style>
-  .app-shell {
-    display: grid;
-    grid-template-columns: var(--sidebar-width) 1fr;
-    min-height: 100vh;
-  }
-  .sidebar {
-    background: var(--surface-sidebar);
-    color: var(--text-on-dark);
-    display: flex; flex-direction: column;
-    position: sticky; top: 0; height: 100vh;
-    overflow-y: auto;
-  }
-  .sidebar-header {
-    display: flex; align-items: center; gap: var(--space-3);
-    padding: var(--space-6) var(--space-4);
-    border-bottom: 1px solid rgb(255 255 255 / 0.1);
-  }
-  .sidebar-logo { font-size: var(--text-xl); }
-  .sidebar-title { font-weight: 700; font-size: var(--text-sm); }
-  .sidebar-nav { display: flex; flex-direction: column; padding: var(--space-4) var(--space-2); gap: var(--space-1); }
-  .nav-item {
-    display: flex; align-items: center; gap: var(--space-3);
-    padding: var(--space-2) var(--space-3); border-radius: var(--radius-md);
-    color: rgb(255 255 255 / 0.7); text-decoration: none;
-    font-size: var(--text-sm); transition: all var(--transition-fast);
-  }
-  .nav-item:hover { background: rgb(255 255 255 / 0.1); color: #fff; }
-  .nav-item.active { background: var(--color-primary-600); color: #fff; }
-  .main-content { padding: var(--space-8); overflow-y: auto; }
-</style>

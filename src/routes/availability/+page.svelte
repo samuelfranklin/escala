@@ -26,21 +26,21 @@
 </script>
 
 <div>
-  <h1 style="font-size:var(--text-2xl);font-weight:700;margin-bottom:var(--space-6)">Disponibilidade</h1>
-  <div style="display:flex;gap:var(--space-3);margin-bottom:var(--space-6)">
-    <select class="input" style="max-width:250px" bind:value={selectedMemberId} onchange={loadAvailability}>
+  <h1 class="text-2xl font-bold mb-6">Disponibilidade</h1>
+  <div class="flex gap-3 mb-6">
+    <select class="input max-w-[250px]" bind:value={selectedMemberId} onchange={loadAvailability}>
       <option value="">Selecione um membro...</option>
       {#each members as m (m.id)}<option value={m.id}>{m.name}</option>{/each}
     </select>
   </div>
   {#if selectedMemberId}
-    <div style="display:flex;gap:var(--space-3);margin-bottom:var(--space-4)">
-      <input class="input" type="date" bind:value={newDate} style="max-width:180px" />
-      <input class="input" placeholder="Motivo (opcional)" bind:value={newReason} style="max-width:200px" />
+    <div class="flex gap-3 mb-4">
+      <input class="input max-w-[180px]" type="date" bind:value={newDate} />
+      <input class="input max-w-[200px]" placeholder="Motivo (opcional)" bind:value={newReason} />
       <button class="btn btn-primary" onclick={handleAdd}>Adicionar Indisponibilidade</button>
     </div>
     {#each availability as a (a.id)}
-      <div class="card" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-2)">
+      <div class="card flex justify-between items-center mb-2">
         <span>{a.unavailable_date}{#if a.reason} — {a.reason}{/if}</span>
         <button class="btn btn-danger btn-sm" onclick={() => deleteAvailability(a.id).then(loadAvailability)}>✕</button>
       </div>

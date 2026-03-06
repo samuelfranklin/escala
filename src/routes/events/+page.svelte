@@ -122,36 +122,35 @@
   }
 </script>
 
-<div data-testid="events-page" style="display:grid;grid-template-columns:1fr 1fr;gap:var(--space-6)">
+<div data-testid="events-page" class="grid grid-cols-2 gap-6">
   <!-- Coluna esquerda: lista de eventos -->
   <div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-4)">
-      <h1 style="font-size:var(--text-2xl);font-weight:700">Eventos</h1>
+    <div class="flex justify-between items-center mb-4">
+      <h1 class="text-2xl font-bold">Eventos</h1>
       <button class="btn btn-primary" data-testid="btn-new-event" onclick={() => showModal = true}>+ Novo Evento</button>
     </div>
 
     {#if loading}
       <p>Carregando...</p>
     {:else if events.length === 0}
-      <p style="color:var(--text-muted)">Nenhum evento cadastrado.</p>
+      <p class="text-slate-500">Nenhum evento cadastrado.</p>
     {:else}
-      <div style="display:flex;flex-direction:column;gap:var(--space-2)">
+      <div class="flex flex-col gap-2">
         {#each events as e (e.id)}
           <div
             data-testid="event-row"
-            class="card"
-            style="cursor:pointer;border-color:{selectedEvent?.id===e.id?'var(--color-primary-500)':'var(--surface-border)'}"
+            class="card cursor-pointer {selectedEvent?.id===e.id ? 'ring-2 ring-blue-500' : ''}"
             onclick={() => selectEvent(e)}
           >
-            <div style="display:flex;justify-content:space-between;align-items:flex-start">
+            <div class="flex justify-between items-start">
               <div>
                 <strong>{e.name}</strong>
-                <span class="badge badge-blue" style="margin-left:var(--space-2)">{e.event_type}</span>
-                <p style="font-size:var(--text-sm);color:var(--text-muted);margin-top:2px">{formatRecurrence(e)}</p>
+                <span class="badge badge-blue ml-2">{e.event_type}</span>
+                <p class="text-sm text-slate-500 mt-0.5">{formatRecurrence(e)}</p>
                 {#if squadCount(e) > 0}
-                  <span style="font-size:var(--text-xs);color:var(--color-success);margin-top:2px;display:block">● {squadCount(e)} {squadCount(e) === 1 ? 'time' : 'times'} configurado{squadCount(e) === 1 ? '' : 's'}</span>
+                  <span class="text-xs text-green-500 mt-0.5 block">● {squadCount(e)} {squadCount(e) === 1 ? 'time' : 'times'} configurado{squadCount(e) === 1 ? '' : 's'}</span>
                 {:else if squadCount(e) === 0}
-                  <span style="font-size:var(--text-xs);color:var(--color-danger-500);margin-top:2px;display:block">✗ Sem times — clique para configurar</span>
+                  <span class="text-xs text-red-500 mt-0.5 block">✗ Sem times — clique para configurar</span>
                 {/if}
               </div>
               <button
@@ -168,34 +167,32 @@
   <!-- Coluna direita: painel de configuração de times -->
   {#if selectedEvent}
     <div>
-      <h2 style="font-size:var(--text-xl);font-weight:600;margin-bottom:var(--space-1)">{selectedEvent.name}</h2>
-      <p style="font-size:var(--text-sm);color:var(--text-muted);margin-bottom:var(--space-4)">Configurar times para esta escala</p>
+      <h2 class="text-xl font-semibold mb-1">{selectedEvent.name}</h2>
+      <p class="text-sm text-slate-500 mb-4">Configurar times para esta escala</p>
 
-      <div style="display:flex;flex-direction:column;gap:var(--space-2);margin-bottom:var(--space-4)">
+      <div class="flex flex-col gap-2 mb-4">
         {#each allSquads as sq (sq.id)}
-          <div class="card" style="padding:var(--space-3)">
-            <label style="display:flex;align-items:center;gap:var(--space-3);cursor:pointer">
+          <div class="card p-3">
+            <label class="flex items-center gap-3 cursor-pointer">
               <input
                 type="checkbox"
                 bind:checked={squadConfig[sq.id].enabled}
-                style="width:16px;height:16px;cursor:pointer"
+                class="w-4 h-4 cursor-pointer"
               />
-              <span style="flex:1;font-weight:500">{sq.name}</span>
+              <span class="flex-1 font-medium">{sq.name}</span>
               {#if squadConfig[sq.id].enabled}
-                <span style="display:flex;align-items:center;gap:var(--space-2);font-size:var(--text-sm)">
-                  <span style="color:var(--text-muted)">mín</span>
+                <span class="flex items-center gap-2 text-sm">
+                  <span class="text-slate-500">mín</span>
                   <input
                     type="number" min="1" max="10"
-                    class="input"
-                    style="width:56px;padding:2px 6px;text-align:center"
+                    class="input w-14 py-0.5 px-1.5 text-center"
                     bind:value={squadConfig[sq.id].min}
                     onclick={(e) => e.stopPropagation()}
                   />
-                  <span style="color:var(--text-muted)">máx</span>
+                  <span class="text-slate-500">máx</span>
                   <input
                     type="number" min="1" max="10"
-                    class="input"
-                    style="width:56px;padding:2px 6px;text-align:center"
+                    class="input w-14 py-0.5 px-1.5 text-center"
                     bind:value={squadConfig[sq.id].max}
                     onclick={(e) => e.stopPropagation()}
                   />
@@ -206,11 +203,11 @@
         {/each}
 
         {#if allSquads.length === 0}
-          <p style="color:var(--text-muted)">Nenhum time cadastrado. Cadastre times primeiro.</p>
+          <p class="text-slate-500">Nenhum time cadastrado. Cadastre times primeiro.</p>
         {/if}
       </div>
 
-      <div style="display:flex;gap:var(--space-3)">
+      <div class="flex gap-3">
         <button class="btn btn-primary" onclick={handleSaveSquads} disabled={saving}>
           {saving ? 'Salvando...' : 'Salvar Configuração'}
         </button>
@@ -218,17 +215,17 @@
       </div>
     </div>
   {:else}
-    <div style="display:flex;align-items:center;justify-content:center;color:var(--text-muted)">
+    <div class="flex items-center justify-center text-slate-500">
       <p>Selecione um evento para configurar os times da escala.</p>
     </div>
   {/if}
 </div>
 
 {#if showModal}
-  <div style="position:fixed;inset:0;background:rgb(0 0 0/0.5);display:flex;align-items:center;justify-content:center;z-index:50">
-    <div class="card" role="dialog" aria-modal="true" style="width:420px">
-      <h2 style="font-size:var(--text-lg);font-weight:600;margin-bottom:var(--space-4)">Novo Evento</h2>
-      <div style="display:flex;flex-direction:column;gap:var(--space-3)">
+  <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div class="card w-[420px]" role="dialog" aria-modal="true">
+      <h2 class="text-lg font-semibold mb-4">Novo Evento</h2>
+      <div class="flex flex-col gap-3">
         <div class="form-group"><label for="ev-name">Nome *</label><input id="ev-name" name="name" class="input" bind:value={form.name} /></div>
 
         <div class="form-group"><label for="ev-type">Tipo</label>
@@ -271,7 +268,7 @@
           <div class="form-group"><label for="ev-date">Data *</label><input id="ev-date" class="input" type="date" bind:value={form.event_date} /></div>
         {/if}
 
-        <div style="display:flex;gap:var(--space-3);justify-content:flex-end">
+        <div class="flex gap-3 justify-end">
           <button class="btn btn-secondary" onclick={() => showModal = false}>Cancelar</button>
           <button class="btn btn-primary" data-testid="btn-save-event" onclick={handleCreate}>Salvar</button>
         </div>
