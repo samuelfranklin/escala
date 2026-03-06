@@ -16,9 +16,20 @@
   "license": "MIT",
   "dependencies": {
     "@tauri-apps/api": "^2",
-    "@tauri-apps/plugin-opener": "^2"
+    "@tauri-apps/plugin-opener": "^2",
+    "bits-ui": "^2.16.3",
+    "clsx": "^2.1.1",
+    "svelte-sonner": "^1.0.8",
+    "tailwind-merge": "^3.5.0",
+    "tailwind-variants": "^3.2.2"
   },
   "devDependencies": {
+    "@fontsource/montserrat": "^5.2.8",
+    "@fontsource/poppins": "^5.2.7",
+    "@iconify-json/lucide": "^1.2.95",
+    "@iconify/svelte": "^5.2.1",
+    "@internationalized/date": "^3.12.0",
+    "@lucide/svelte": "^0.561.0",
     "@playwright/test": "^1.58.2",
     "@sveltejs/adapter-static": "^3.0.6",
     "@sveltejs/kit": "^2.9.0",
@@ -27,6 +38,7 @@
     "@tailwindcss/vite": "^4.2.1",
     "@tauri-apps/cli": "^2",
     "@vitest/coverage-v8": "^4.0.18",
+    "mode-watcher": "^1.1.0",
     "postcss": "^8.5.8",
     "svelte": "^5.0.0",
     "svelte-check": "^4.0.0",

@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO schedule_entries (id, event_id, occurrence_date, squad_id, member_id) VALUES (?, ?, ?, ?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 5
+    },
+    "nullable": []
+  },
+  "hash": "d13d8c7d42c098d33bbdcdbca4e18240ba984751be5a0a888d6355bbb72b5186"
+}

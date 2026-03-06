@@ -4,6 +4,14 @@
   import { getSquads } from '$lib/api/squads';
   import { toast } from '$lib/stores/toast';
   import type { Event, CreateEventDto, Squad, EventSquad, EventSquadDto, RecurrenceType } from '$lib/types';
+  import * as Dialog from '$lib/components/ui/dialog/index.js';
+  import * as Select from '$lib/components/ui/select/index.js';
+  import * as Checkbox from '$lib/components/ui/checkbox/index.js';
+  import { Button } from '$lib/components/ui/button/index.js';
+  import { Badge } from '$lib/components/ui/badge/index.js';
+  import { Input } from '$lib/components/ui/input/index.js';
+  import { Label } from '$lib/components/ui/label/index.js';
+  import Icon from '@iconify/svelte';
 
   let events = $state<Event[]>([]);
   let allSquads = $state<Squad[]>([]);
@@ -126,37 +134,48 @@
   <!-- Coluna esquerda: lista de eventos -->
   <div>
     <div class="flex justify-between items-center mb-4">
-      <h1 class="text-2xl font-bold">Eventos</h1>
-      <button class="btn btn-primary" data-testid="btn-new-event" onclick={() => showModal = true}>+ Novo Evento</button>
+      <h1 class="text-2xl font-heading font-bold">Eventos</h1>
+      <Button data-testid="btn-new-event" onclick={() => showModal = true}>
+        <Icon icon="lucide:plus" class="size-4 mr-1" /> Novo Evento
+      </Button>
     </div>
 
     {#if loading}
-      <p>Carregando...</p>
+      <div class="flex flex-col gap-2">
+        {#each [1,2,3] as _}
+          <div class="h-16 rounded-lg bg-muted animate-pulse"></div>
+        {/each}
+      </div>
     {:else if events.length === 0}
-      <p class="text-slate-500">Nenhum evento cadastrado.</p>
+      <p class="text-muted-foreground">Nenhum evento cadastrado.</p>
     {:else}
       <div class="flex flex-col gap-2">
         {#each events as e (e.id)}
           <div
             data-testid="event-row"
-            class="card cursor-pointer {selectedEvent?.id===e.id ? 'ring-2 ring-blue-500' : ''}"
+            class="rounded-lg border bg-card p-3 cursor-pointer transition-all hover:bg-accent {selectedEvent?.id===e.id ? 'ring-2 ring-primary' : ''}"
             onclick={() => selectEvent(e)}
+            role="button"
+            tabindex="0"
+            onkeydown={(ev) => ev.key === 'Enter' && selectEvent(e)}
           >
             <div class="flex justify-between items-start">
               <div>
-                <strong>{e.name}</strong>
-                <span class="badge badge-blue ml-2">{e.event_type}</span>
-                <p class="text-sm text-slate-500 mt-0.5">{formatRecurrence(e)}</p>
+                <div class="flex items-center gap-2">
+                  <strong class="text-sm">{e.name}</strong>
+                  <Badge variant="secondary" class="text-xs">{e.event_type}</Badge>
+                </div>
+                <p class="text-xs text-muted-foreground mt-0.5">{formatRecurrence(e)}</p>
                 {#if squadCount(e) > 0}
-                  <span class="text-xs text-green-500 mt-0.5 block">● {squadCount(e)} {squadCount(e) === 1 ? 'time' : 'times'} configurado{squadCount(e) === 1 ? '' : 's'}</span>
+                  <p class="text-xs text-green-600 mt-0.5">● {squadCount(e)} {squadCount(e) === 1 ? 'time' : 'times'} configurado{squadCount(e) === 1 ? '' : 's'}</p>
                 {:else if squadCount(e) === 0}
-                  <span class="text-xs text-red-500 mt-0.5 block">✗ Sem times — clique para configurar</span>
+                  <p class="text-xs text-destructive mt-0.5">✗ Sem times — clique para configurar</p>
                 {/if}
               </div>
-              <button
-                class="btn btn-danger btn-sm"
-                onclick={(ev) => { ev.stopPropagation(); handleDelete(e.id); }}
-              >✕</button>
+              <Button variant="ghost" size="icon" class="size-7 text-muted-foreground hover:text-destructive"
+                onclick={(ev: MouseEvent) => { ev.stopPropagation(); handleDelete(e.id); }}>
+                <Icon icon="lucide:x" class="size-3.5" />
+              </Button>
             </div>
           </div>
         {/each}
@@ -167,34 +186,33 @@
   <!-- Coluna direita: painel de configuração de times -->
   {#if selectedEvent}
     <div>
-      <h2 class="text-xl font-semibold mb-1">{selectedEvent.name}</h2>
-      <p class="text-sm text-slate-500 mb-4">Configurar times para esta escala</p>
+      <h2 class="text-xl font-heading font-semibold mb-1">{selectedEvent.name}</h2>
+      <p class="text-sm text-muted-foreground mb-4">Configurar times para esta escala</p>
 
       <div class="flex flex-col gap-2 mb-4">
         {#each allSquads as sq (sq.id)}
-          <div class="card p-3">
+          <div class="rounded-lg border bg-card p-3">
             <label class="flex items-center gap-3 cursor-pointer">
-              <input
-                type="checkbox"
-                bind:checked={squadConfig[sq.id].enabled}
-                class="w-4 h-4 cursor-pointer"
+              <Checkbox.Root
+                checked={squadConfig[sq.id].enabled}
+                onCheckedChange={(v: boolean | 'indeterminate') => squadConfig[sq.id].enabled = v === true}
               />
-              <span class="flex-1 font-medium">{sq.name}</span>
+              <span class="flex-1 text-sm font-medium">{sq.name}</span>
               {#if squadConfig[sq.id].enabled}
                 <span class="flex items-center gap-2 text-sm">
-                  <span class="text-slate-500">mín</span>
-                  <input
+                  <span class="text-muted-foreground">mín</span>
+                  <Input
                     type="number" min="1" max="10"
-                    class="input w-14 py-0.5 px-1.5 text-center"
+                    class="w-14 py-0.5 px-1.5 text-center h-7"
                     bind:value={squadConfig[sq.id].min}
-                    onclick={(e) => e.stopPropagation()}
+                    onclick={(e: MouseEvent) => e.stopPropagation()}
                   />
-                  <span class="text-slate-500">máx</span>
-                  <input
+                  <span class="text-muted-foreground">máx</span>
+                  <Input
                     type="number" min="1" max="10"
-                    class="input w-14 py-0.5 px-1.5 text-center"
+                    class="w-14 py-0.5 px-1.5 text-center h-7"
                     bind:value={squadConfig[sq.id].max}
-                    onclick={(e) => e.stopPropagation()}
+                    onclick={(e: MouseEvent) => e.stopPropagation()}
                   />
                 </span>
               {/if}
@@ -203,76 +221,99 @@
         {/each}
 
         {#if allSquads.length === 0}
-          <p class="text-slate-500">Nenhum time cadastrado. Cadastre times primeiro.</p>
+          <p class="text-sm text-muted-foreground">Nenhum time cadastrado. Cadastre times primeiro.</p>
         {/if}
       </div>
 
       <div class="flex gap-3">
-        <button class="btn btn-primary" onclick={handleSaveSquads} disabled={saving}>
+        <Button onclick={handleSaveSquads} disabled={saving}>
           {saving ? 'Salvando...' : 'Salvar Configuração'}
-        </button>
-        <button class="btn btn-secondary" onclick={() => selectedEvent = null}>Fechar</button>
+        </Button>
+        <Button variant="outline" onclick={() => selectedEvent = null}>Fechar</Button>
       </div>
     </div>
   {:else}
-    <div class="flex items-center justify-center text-slate-500">
+    <div class="flex items-center justify-center text-muted-foreground">
       <p>Selecione um evento para configurar os times da escala.</p>
     </div>
   {/if}
 </div>
 
-{#if showModal}
-  <div class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-    <div class="card w-[420px]" role="dialog" aria-modal="true">
-      <h2 class="text-lg font-semibold mb-4">Novo Evento</h2>
-      <div class="flex flex-col gap-3">
-        <div class="form-group"><label for="ev-name">Nome *</label><input id="ev-name" name="name" class="input" bind:value={form.name} /></div>
-
-        <div class="form-group"><label for="ev-type">Tipo</label>
-          <select id="ev-type" class="input" bind:value={form.event_type}
-            onchange={() => {
-              if (form.event_type === 'regular') {
-                form.event_date = undefined;
-                form.day_of_week ??= 0;
-                form.recurrence ??= 'weekly';
-              } else {
-                form.day_of_week = undefined;
-                form.recurrence = undefined;
-              }
-            }}>
-            <option value="regular">Regular (recorrente)</option>
-            <option value="special">Especial</option>
-            <option value="training">Treinamento</option>
-          </select>
-        </div>
-
-        {#if form.event_type === 'regular'}
-          <div class="form-group"><label for="ev-dow">Dia da semana *</label>
-            <select id="ev-dow" class="input" bind:value={form.day_of_week}>
-              {#each DAYS as d, i}
-                <option value={i}>{d}</option>
-              {/each}
-            </select>
-          </div>
-          <div class="form-group"><label for="ev-rec">Frequência *</label>
-            <select id="ev-rec" class="input" bind:value={form.recurrence}>
-              <option value="weekly">Semanal (toda semana)</option>
-              <option value="biweekly">Quinzenal (a cada 2 semanas)</option>
-              <option value="monthly_1">Mensal — 1ª semana do mês</option>
-              <option value="monthly_2">Mensal — 2ª semana do mês</option>
-              <option value="monthly_3">Mensal — 3ª semana do mês</option>
-              <option value="monthly_4">Mensal — 4ª semana do mês</option>
-            </select>
-          </div>
-        {:else}
-          <div class="form-group"><label for="ev-date">Data *</label><input id="ev-date" class="input" type="date" bind:value={form.event_date} /></div>
-        {/if}
-
-        <div class="flex gap-3 justify-end">
-          <button class="btn btn-secondary" onclick={() => showModal = false}>Cancelar</button>
-          <button class="btn btn-primary" data-testid="btn-save-event" onclick={handleCreate}>Salvar</button>
-        </div>
+<Dialog.Root bind:open={showModal}>
+  <Dialog.Content class="sm:max-w-[440px]">
+    <Dialog.Header>
+      <Dialog.Title class="font-heading">Novo Evento</Dialog.Title>
+    </Dialog.Header>
+    <div class="flex flex-col gap-4 py-2">
+      <div class="flex flex-col gap-1.5">
+        <Label for="ev-name">Nome *</Label>
+        <Input id="ev-name" name="name" bind:value={form.name} />
       </div>
+
+      <div class="flex flex-col gap-1.5">
+        <Label>Tipo</Label>
+        <Select.Root type="single" onValueChange={(v: any) => {
+          form.event_type = v as typeof form.event_type;
+          if (v === 'regular') {
+            form.event_date = undefined;
+            form.day_of_week ??= 0;
+            form.recurrence ??= 'weekly';
+          } else {
+            form.day_of_week = undefined;
+            form.recurrence = undefined;
+          }
+        }}>
+          <Select.Trigger>
+            {({'regular':'Regular (recorrente)', 'special':'Especial', 'training':'Treinamento'} as Record<string,string>)[form.event_type] ?? 'Tipo'}
+          </Select.Trigger>
+          <Select.Content>
+            <Select.Item value="regular">Regular (recorrente)</Select.Item>
+            <Select.Item value="special">Especial</Select.Item>
+            <Select.Item value="training">Treinamento</Select.Item>
+          </Select.Content>
+        </Select.Root>
+      </div>
+
+      {#if form.event_type === 'regular'}
+        <div class="flex flex-col gap-1.5">
+          <Label>Dia da semana *</Label>
+          <Select.Root type="single" onValueChange={(v: any) => form.day_of_week = Number(v)}>
+            <Select.Trigger>
+              {DAYS[form.day_of_week ?? 0] ?? 'Selecionar dia'}
+            </Select.Trigger>
+            <Select.Content>
+              {#each DAYS as d, i}
+                <Select.Item value={String(i)}>{d}</Select.Item>
+              {/each}
+            </Select.Content>
+          </Select.Root>
+        </div>
+        <div class="flex flex-col gap-1.5">
+          <Label>Frequência *</Label>
+          <Select.Root type="single" onValueChange={(v: any) => form.recurrence = v as RecurrenceType}>
+            <Select.Trigger>
+              {RECURRENCE_LABELS[form.recurrence ?? 'weekly'] ?? 'Frequência'}
+            </Select.Trigger>
+            <Select.Content>
+              <Select.Item value="weekly">Semanal (toda semana)</Select.Item>
+              <Select.Item value="biweekly">Quinzenal (a cada 2 semanas)</Select.Item>
+              <Select.Item value="monthly_1">Mensal — 1ª semana do mês</Select.Item>
+              <Select.Item value="monthly_2">Mensal — 2ª semana do mês</Select.Item>
+              <Select.Item value="monthly_3">Mensal — 3ª semana do mês</Select.Item>
+              <Select.Item value="monthly_4">Mensal — 4ª semana do mês</Select.Item>
+            </Select.Content>
+          </Select.Root>
+        </div>
+      {:else}
+        <div class="flex flex-col gap-1.5">
+          <Label for="ev-date">Data *</Label>
+          <Input id="ev-date" type="date" bind:value={form.event_date} />
+        </div>
+      {/if}
     </div>
-  </div>
-{/if}
+    <Dialog.Footer>
+      <Button variant="outline" onclick={() => showModal = false}>Cancelar</Button>
+      <Button data-testid="btn-save-event" onclick={handleCreate}>Salvar</Button>
+    </Dialog.Footer>
+  </Dialog.Content>
+</Dialog.Root>

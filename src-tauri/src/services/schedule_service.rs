@@ -8,6 +8,7 @@ use crate::{db::schedule_repo, errors::AppError, models::schedule::{MonthSchedul
 use chrono::{Datelike, NaiveDate};
 use sqlx::SqlitePool;
 use std::collections::{HashMap, HashSet};
+use uuid::Uuid;
 
 pub async fn get_schedule(pool: &SqlitePool, event_id: &str) -> Result<ScheduleView, AppError> {
     schedule_repo::get_by_event(pool, event_id).await
@@ -115,6 +116,12 @@ pub async fn generate_schedule(pool: &SqlitePool, event_id: &str) -> Result<Sche
 /// Gera a escala para todos os eventos de um mês (YYYY-MM).
 /// Eventos regulares: cada ocorrência calculada pela recorrência.
 /// Eventos fixos (special/training): incluídos se event_date cair no mês.
+///
+/// Estratégia two-phase para garantir atomicidade:
+///   Phase 1 — Calcula todas as alocações em memória (sem writes ao DB).
+///              Se min_members não for atingido, retorna Err sem alterar o BD.
+///   Phase 2 — Transação atômica: limpa o mês e insere todas as alocações.
+///              Qualquer falha faz rollback automático, preservando a escala anterior.
 pub async fn generate_month_schedule(pool: &SqlitePool, month: &str) -> Result<MonthScheduleView, AppError> {
     let parts: Vec<&str> = month.split('-').collect();
     if parts.len() != 2 {
@@ -123,16 +130,15 @@ pub async fn generate_month_schedule(pool: &SqlitePool, month: &str) -> Result<M
     let year: i32 = parts[0].parse().map_err(|_| AppError::Validation("Ano inválido".into()))?;
     let month_num: u32 = parts[1].parse().map_err(|_| AppError::Validation("Mês inválido".into()))?;
 
-    // 1. Limpa todas as entradas de ocorrência deste mês
-    schedule_repo::clear_month(pool, month).await?;
+    let month_pattern = format!("{}%", month);
 
-    // 2. Carrega todos os eventos
+    // 1. Carrega todos os eventos
     let events = sqlx::query!(
         r#"SELECT id as "id!", name as "name!", event_date, event_type as "event_type!", day_of_week, recurrence
            FROM events"#
     ).fetch_all(pool).await.map_err(AppError::from)?;
 
-    // 3. Calcula as ocorrências do mês: (event_id, event_name, occurrence_date)
+    // 2. Calcula as ocorrências do mês: (event_id, event_name, occurrence_date)
     let mut all_occurrences: Vec<(String, String, String)> = Vec::new();
     for ev in &events {
         if ev.event_type == "regular" {
@@ -153,10 +159,15 @@ pub async fn generate_month_schedule(pool: &SqlitePool, month: &str) -> Result<M
     all_occurrences.sort_by(|a, b| a.2.cmp(&b.2).then(a.1.cmp(&b.1)));
 
     if all_occurrences.is_empty() {
+        // Sem ocorrências: limpa o mês atomicamente e retorna vazio
+        let mut tx = pool.begin().await.map_err(AppError::from)?;
+        sqlx::query!("DELETE FROM schedule_entries WHERE occurrence_date LIKE ?", month_pattern)
+            .execute(&mut *tx).await.map_err(AppError::from)?;
+        tx.commit().await.map_err(AppError::from)?;
         return Ok(MonthScheduleView { month: month.to_string(), occurrences: vec![] });
     }
 
-    // 4. Restrições de casais (carregadas uma vez)
+    // 3. Restrições de casais (carregadas uma vez)
     let couple_rows = sqlx::query!(
         r#"SELECT member_a_id as "member_a_id!", member_b_id as "member_b_id!" FROM couples"#)
         .fetch_all(pool).await.map_err(AppError::from)?;
@@ -166,18 +177,29 @@ pub async fn generate_month_schedule(pool: &SqlitePool, month: &str) -> Result<M
         couple_map.entry(r.member_b_id.clone()).or_default().insert(r.member_a_id.clone());
     }
 
-    // 5. Contagem inicial de escalas por membro (rotatividade)
-    // O count_map é atualizado a cada ocorrência gerada para garantir rotação correta
+    // 4. Histórico de escalas por membro, EXCLUINDO o mês atual.
+    //    Garante rotação correta tanto na geração inicial quanto na regeração
+    //    (ao regenerar Abril, não conta as entradas antigas de Abril que serão substituídas).
     let schedule_counts = sqlx::query!(
-        r#"SELECT member_id as "member_id!", COUNT(*) as "cnt: i64" FROM schedule_entries GROUP BY member_id"#)
+        r#"SELECT member_id as "member_id!", COUNT(*) as "cnt: i64"
+           FROM schedule_entries
+           WHERE occurrence_date NOT LIKE ? OR occurrence_date IS NULL
+           GROUP BY member_id"#,
+        month_pattern)
         .fetch_all(pool).await.map_err(AppError::from)?;
     let mut count_map: HashMap<String, i64> = schedule_counts.into_iter()
         .map(|r| (r.member_id, r.cnt)).collect();
 
-    // 6. Gera a escala para cada ocorrência
+    // ── PHASE 1: Calcula todas as alocações em memória (sem writes ao DB) ──
+    // Qualquer falha aqui (ex: membros insuficientes) retorna Err sem alterar o DB.
+    let mut allocations: Vec<(String, String, String, String)> = Vec::new();
+
     for (event_id, _, occurrence_date) in &all_occurrences {
         let event_squads = sqlx::query!(
-            r#"SELECT squad_id as "squad_id!", min_members, max_members FROM event_squads WHERE event_id = ?"#,
+            r#"SELECT es.squad_id as "squad_id!", s.name as "squad_name!", es.min_members, es.max_members
+               FROM event_squads es
+               JOIN squads s ON s.id = es.squad_id
+               WHERE es.event_id = ?"#,
             event_id)
             .fetch_all(pool).await.map_err(AppError::from)?;
 
@@ -225,19 +247,37 @@ pub async fn generate_month_schedule(pool: &SqlitePool, month: &str) -> Result<M
             }
 
             if (allocated_in_squad.len() as i64) < es.min_members {
+                // Falha na Phase 1 → nenhum write ao DB → escala anterior intacta
                 return Err(AppError::Validation(format!(
-                    "Membros insuficientes para o time '{}' em {} (mínimo: {}, disponível: {})",
-                    es.squad_id, occurrence_date, es.min_members, allocated_in_squad.len()
+                    "Membros insuficientes para o time '{}' em {} (mínimo: {}, disponível: {}). Verifique disponibilidades e restrições de casais.",
+                    es.squad_name, occurrence_date, es.min_members, allocated_in_squad.len()
                 )));
             }
 
             for member_id in &allocated_in_squad {
-                schedule_repo::insert_occurrence_entry(pool, event_id, occurrence_date, &es.squad_id, member_id).await?;
-                // Atualiza rotatividade: para a próxima ocorrência esta pessoa terá +1
+                allocations.push((event_id.clone(), occurrence_date.clone(), es.squad_id.clone(), member_id.clone()));
+                // Atualiza rotatividade em memória para as próximas ocorrências do mês
                 *count_map.entry(member_id.clone()).or_insert(0) += 1;
             }
         }
     }
+
+    // ── PHASE 2: Transação atômica — limpa o mês e insere todas as alocações ──
+    // O rollback automático (ao soltar `tx` sem commit) preserva a escala anterior.
+    let mut tx = pool.begin().await.map_err(AppError::from)?;
+
+    sqlx::query!("DELETE FROM schedule_entries WHERE occurrence_date LIKE ?", month_pattern)
+        .execute(&mut *tx).await.map_err(AppError::from)?;
+
+    for (event_id, occurrence_date, squad_id, member_id) in &allocations {
+        let id = Uuid::new_v4().to_string().replace('-', "");
+        sqlx::query!(
+            "INSERT INTO schedule_entries (id, event_id, occurrence_date, squad_id, member_id) VALUES (?, ?, ?, ?, ?)",
+            id, event_id, occurrence_date, squad_id, member_id)
+            .execute(&mut *tx).await.map_err(AppError::from)?;
+    }
+
+    tx.commit().await.map_err(AppError::from)?;
 
     schedule_repo::get_month_schedule(pool, month).await
 }

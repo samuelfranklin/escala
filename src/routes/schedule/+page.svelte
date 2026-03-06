@@ -3,6 +3,10 @@
   import { getMonthSchedule, generateMonthSchedule, clearMonthSchedule } from '$lib/api/schedule';
   import { toast } from '$lib/stores/toast';
   import type { MonthScheduleView, OccurrenceSchedule } from '$lib/types';
+  import { Button } from '$lib/components/ui/button/index.js';
+  import { Label } from '$lib/components/ui/label/index.js';
+  import { Input } from '$lib/components/ui/input/index.js';
+  import Icon from '@iconify/svelte';
 
   // Mês atual como padrão (formato YYYY-MM)
   const today = new Date();
@@ -31,6 +35,9 @@
       toast.success('Escala do mês gerada!');
     } catch (e: any) {
       toast.error(e.message || 'Erro ao gerar escala');
+      // Sincroniza o estado com o DB: com a correção two-phase, a escala anterior
+      // foi preservada; sem ela, mostra o estado real (evita dados fantasma no frontend).
+      await loadMonth();
     } finally {
       generating = false;
     }
@@ -138,60 +145,61 @@
 </script>
 
 <div data-testid="schedule-page">
-  <h1 class="text-2xl font-bold mb-6">Escala</h1>
+  <h1 class="text-2xl font-heading font-bold mb-6">Escala</h1>
 
-  <!-- Controles: seletor de mês + botões -->
+  <!-- Controles -->
   <div class="flex gap-3 items-end flex-wrap mb-6">
-    <div class="form-group flex-none">
-      <label for="month-select">Mês</label>
-      <input id="month-select" class="input min-w-[160px]" type="month" bind:value={selectedMonth}
+    <div class="flex flex-col gap-1.5">
+      <Label for="month-select">Mês</Label>
+      <Input id="month-select" class="min-w-[160px]" type="month" bind:value={selectedMonth}
         onchange={loadMonth} />
     </div>
-    <button class="btn btn-primary" data-testid="btn-generate-schedule"
+    <Button data-testid="btn-generate-schedule"
       onclick={handleGenerate} disabled={!selectedMonth || generating}>
-      {generating ? 'Gerando...' : '⚡ Gerar Escala do Mês'}
-    </button>
+      <Icon icon="lucide:zap" class="size-4 mr-1.5" />
+      {generating ? 'Gerando...' : 'Gerar Escala do Mês'}
+    </Button>
     {#if hasSchedule()}
-      <button class="btn btn-secondary" onclick={handleClear}>🗑 Limpar Mês</button>
+      <Button variant="outline" onclick={handleClear}>
+        <Icon icon="lucide:trash-2" class="size-4 mr-1.5" /> Limpar Mês
+      </Button>
     {/if}
   </div>
 
   {#if loading}
-    <p class="text-slate-500">Carregando...</p>
+    <div class="flex flex-col gap-4">
+      {#each [1,2] as _}
+        <div class="h-32 rounded-xl bg-muted animate-pulse"></div>
+      {/each}
+    </div>
 
   {:else if !hasSchedule()}
-    <div class="flex flex-col items-center justify-center py-16 text-slate-500 gap-3">
-      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/>
-        <rect x="9" y="3" width="6" height="4" rx="1"/>
-        <line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/>
-      </svg>
+    <div class="flex flex-col items-center justify-center py-16 text-muted-foreground gap-3">
+      <Icon icon="lucide:clipboard-list" class="size-12 opacity-30" />
       <p class="text-sm">
-        Nenhuma escala para {fmtMonthTitle(selectedMonth)}. Clique em "⚡ Gerar Escala do Mês".
+        Nenhuma escala para {fmtMonthTitle(selectedMonth)}. Clique em "Gerar Escala do Mês".
       </p>
     </div>
 
   {:else}
-    <!-- Título do mês -->
-    <h2 class="text-xl font-bold mb-6">
+    <h2 class="text-xl font-heading font-bold mb-6">
       {fmtMonthTitle(selectedMonth)}
-      <span class="text-sm font-normal text-slate-500 ml-3">
+      <span class="text-sm font-normal text-muted-foreground ml-3">
         {monthSchedule!.occurrences.length} {monthSchedule!.occurrences.length === 1 ? 'ocorrência' : 'ocorrências'}
       </span>
     </h2>
 
-    <!-- Um cartão por evento -->
     {#each groupedByEvent() as group}
       {@const pivot = buildEventPivot(group.occurrences)}
-      <div class="card mb-6">
-        <h3 class="text-base font-bold mb-4">{group.name}</h3>
+      <div class="rounded-xl border bg-card p-4 mb-6 shadow-sm">
+        <h3 class="text-base font-heading font-bold mb-4">{group.name}</h3>
         <div class="overflow-x-auto">
           <table class="w-full border-collapse text-sm">
             <thead>
               <tr>
-                <th class="px-3 py-2 text-left bg-slate-100 border border-slate-200 font-bold whitespace-nowrap min-w-[120px]">Time</th>
+                <th class="px-3 py-2 text-left bg-muted/60 border border-border font-semibold whitespace-nowrap min-w-[120px]">Time</th>
                 {#each pivot.dates as date}
-                  <th class="px-3 py-2 text-left bg-slate-100 border border-slate-200 font-bold whitespace-nowrap">
+                  <th class="px-3 py-2 text-left bg-muted/60 border border-border font-semibold whitespace-nowrap">
                     {fmtDate(date)}
                   </th>
                 {/each}
@@ -200,13 +208,13 @@
             <tbody>
               {#each pivot.squads as squad}
                 <tr>
-                  <td class="px-3 py-2 border border-slate-200 font-semibold bg-slate-50 whitespace-nowrap">{squad}</td>
+                  <td class="px-3 py-2 border border-border font-semibold bg-muted/30 whitespace-nowrap">{squad}</td>
                   {#each pivot.dates as date}
-                    <td class="px-3 py-2 border border-slate-200">
+                    <td class="px-3 py-2 border border-border">
                       {#if pivot.cells[squad][date]?.length}
                         {pivot.cells[squad][date].join(' · ')}
                       {:else}
-                        <span class="text-slate-400">—</span>
+                        <span class="text-muted-foreground">—</span>
                       {/if}
                     </td>
                   {/each}
@@ -214,7 +222,7 @@
               {/each}
               {#if pivot.squads.length === 0}
                 <tr>
-                  <td colspan={pivot.dates.length + 1} class="px-3 py-3 border border-slate-200 text-slate-500 text-center">
+                  <td colspan={pivot.dates.length + 1} class="px-3 py-3 border border-border text-muted-foreground text-center">
                     Nenhuma alocação registrada
                   </td>
                 </tr>
@@ -225,10 +233,13 @@
       </div>
     {/each}
 
-    <!-- Botões de export -->
     <div class="flex gap-3 flex-wrap">
-      <button class="btn btn-secondary" data-testid="btn-copy-schedule" onclick={handleCopy}>📋 Copiar Mês</button>
-      <button class="btn btn-secondary" data-testid="btn-export-csv" onclick={handleExportCsv}>📤 Exportar CSV</button>
+      <Button variant="outline" data-testid="btn-copy-schedule" onclick={handleCopy}>
+        <Icon icon="lucide:copy" class="size-4 mr-1.5" /> Copiar Mês
+      </Button>
+      <Button variant="outline" data-testid="btn-export-csv" onclick={handleExportCsv}>
+        <Icon icon="lucide:download" class="size-4 mr-1.5" /> Exportar CSV
+      </Button>
     </div>
   {/if}
 </div>
