@@ -107,6 +107,21 @@ export interface ScheduleView {
   entries: ScheduleEntryView[];
 }
 
+/** Uma ocorrência concreta de um evento num dia específico */
+export interface OccurrenceSchedule {
+  event_id: string;
+  event_name: string;
+  /** Data concreta: YYYY-MM-DD */
+  occurrence_date: string;
+  entries: ScheduleEntryView[];
+}
+
+/** Escala mensal: todas as ocorrências de todos os eventos num mês YYYY-MM */
+export interface MonthScheduleView {
+  month: string;
+  occurrences: OccurrenceSchedule[];
+}
+
 export interface Couple {
   id: string;
   member_a_id: string;

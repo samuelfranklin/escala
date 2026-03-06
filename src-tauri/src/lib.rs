@@ -81,6 +81,9 @@ pub fn run() {
             commands::schedule::get_schedule,
             commands::schedule::generate_schedule,
             commands::schedule::clear_schedule,
+            commands::schedule::get_month_schedule,
+            commands::schedule::generate_month_schedule,
+            commands::schedule::clear_month_schedule,
             // Couple
             commands::couple::get_couples,
             commands::couple::create_couple,
