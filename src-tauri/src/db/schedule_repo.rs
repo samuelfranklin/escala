@@ -62,7 +62,7 @@ pub async fn get_month_schedule(pool: &SqlitePool, month: &str) -> Result<MonthS
     // Agrupa linearmente — rows já ordenadas por (occurrence_date, event_name)
     let mut occurrences: Vec<OccurrenceSchedule> = Vec::new();
     for r in rows {
-        let needs_new = occurrences.last().map_or(true, |o: &OccurrenceSchedule| {
+        let needs_new = occurrences.last().is_none_or(|o: &OccurrenceSchedule| {
             o.event_id != r.event_id || o.occurrence_date != r.occurrence_date
         });
         if needs_new {

@@ -26,7 +26,7 @@ jobs:
         run: npm ci
 
       - name: TypeScript check
-        run: npx tsc --noEmit
+        run: npx svelte-check --tsconfig ./tsconfig.json
 
       - name: Build frontend
         run: npm run build

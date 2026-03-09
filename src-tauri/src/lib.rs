@@ -8,7 +8,6 @@ use sqlx::{sqlite::SqliteConnectOptions, sqlite::SqlitePoolOptions, SqlitePool};
 use std::str::FromStr;
 use tauri::Manager;
 use tauri_plugin_log::{Target, TargetKind};
-use log;
 
 pub struct AppState {
     pub db: SqlitePool,
