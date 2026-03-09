@@ -47,20 +47,22 @@ pub async fn create(pool: &SqlitePool, dto: CreateMemberDto) -> Result<Member, A
 }
 
 pub async fn update(pool: &SqlitePool, id: &str, dto: UpdateMemberDto) -> Result<Member, AppError> {
-    // Build dynamic update — only set provided fields
-    let mut sets: Vec<String> = vec!["updated_at = datetime('now')".to_string()];
-    if let Some(v) = &dto.name        { sets.push(format!("name = '{}'", v.replace('\'', "''"))) }
-    if let Some(v) = &dto.email       { sets.push(format!("email = '{}'", v.replace('\'', "''"))) }
-    if let Some(v) = &dto.phone       { sets.push(format!("phone = '{}'", v.replace('\'', "''"))) }
-    if let Some(v) = &dto.instagram   { sets.push(format!("instagram = '{}'", v.replace('\'', "''"))) }
-    if let Some(v) = &dto.rank        { sets.push(format!("rank = '{}'", v.replace('\'', "''"))) }
-    if let Some(v) = dto.active       { sets.push(format!("active = {}", v as i32)) }
+    let current = get_by_id(pool, id).await?;
+    let name = dto.name.unwrap_or(current.name);
+    let email = dto.email.or(current.email);
+    let phone = dto.phone.or(current.phone);
+    let instagram = dto.instagram.or(current.instagram);
+    let rank = dto.rank.unwrap_or(current.rank);
+    let active = dto.active.unwrap_or(current.active);
 
-    let sql = format!("UPDATE members SET {} WHERE id = '{}'", sets.join(", "), id);
-    let rows = sqlx::query(&sql).execute(pool).await.map_err(AppError::from)?.rows_affected();
-    if rows == 0 {
-        return Err(AppError::NotFound(format!("Member '{}' not found", id)));
-    }
+    sqlx::query!(
+        "UPDATE members SET name = ?, email = ?, phone = ?, instagram = ?, rank = ?, active = ?, updated_at = datetime('now') WHERE id = ?",
+        name, email, phone, instagram, rank, active, id
+    )
+    .execute(pool)
+    .await
+    .map_err(AppError::from)?;
+
     get_by_id(pool, id).await
 }
 

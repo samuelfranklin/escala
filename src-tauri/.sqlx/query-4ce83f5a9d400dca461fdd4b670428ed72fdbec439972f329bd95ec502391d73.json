@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT apply_monthly_limit as \"apply_monthly_limit: bool\",\n                  max_occurrences_per_month as \"max_occurrences_per_month: i64\",\n                  propagate_couples as \"propagate_couples: bool\",\n                  apply_history_scoring as \"apply_history_scoring: bool\"\n           FROM schedule_config WHERE id = 1",
+  "describe": {
+    "columns": [
+      {
+        "name": "apply_monthly_limit: bool",
+        "ordinal": 0,
+        "type_info": "Integer"
+      },
+      {
+        "name": "max_occurrences_per_month: i64",
+        "ordinal": 1,
+        "type_info": "Integer"
+      },
+      {
+        "name": "propagate_couples: bool",
+        "ordinal": 2,
+        "type_info": "Integer"
+      },
+      {
+        "name": "apply_history_scoring: bool",
+        "ordinal": 3,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "4ce83f5a9d400dca461fdd4b670428ed72fdbec439972f329bd95ec502391d73"
+}

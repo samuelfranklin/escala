@@ -7,12 +7,15 @@ pub mod services;
 use sqlx::{sqlite::SqliteConnectOptions, sqlite::SqlitePoolOptions, SqlitePool};
 use std::str::FromStr;
 use tauri::Manager;
+use tauri_plugin_log::{Target, TargetKind};
+use log;
 
 pub struct AppState {
     pub db: SqlitePool,
 }
 
 async fn create_db_pool(db_url: &str) -> SqlitePool {
+    log::info!("Conectando ao banco: {}", db_url);
     let opts = SqliteConnectOptions::from_str(db_url)
         .expect("Invalid DATABASE_URL")
         .create_if_missing(true);
@@ -23,11 +26,13 @@ async fn create_db_pool(db_url: &str) -> SqlitePool {
         .await
         .expect("Failed to connect to SQLite database");
 
+    log::info!("Executando migrations...");
     sqlx::migrate!("./migrations")
         .run(&pool)
         .await
         .expect("Failed to run database migrations");
 
+    log::info!("Banco pronto.");
     pool
 }
 
@@ -35,6 +40,16 @@ async fn create_db_pool(db_url: &str) -> SqlitePool {
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(
+            tauri_plugin_log::Builder::new()
+                .targets([
+                    Target::new(TargetKind::Stdout),
+                    Target::new(TargetKind::LogDir { file_name: None }),
+                    Target::new(TargetKind::Webview),
+                ])
+                .level(log::LevelFilter::Info)
+                .build(),
+        )
         .setup(|app| {
             // Resolve database path: env var takes priority (CI/dev),
             // otherwise use Tauri's app data directory.
@@ -92,6 +107,9 @@ pub fn run() {
             commands::availability::get_availability,
             commands::availability::create_availability,
             commands::availability::delete_availability,
+            // Settings
+            commands::settings::get_schedule_config,
+            commands::settings::update_schedule_config,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

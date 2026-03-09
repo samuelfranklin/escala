@@ -1,5 +1,24 @@
 use serde::{Deserialize, Serialize};
 
+/// Dados mínimos de evento para geração de escala unitária
+#[derive(Debug, Clone)]
+pub struct EventScheduleRow {
+    pub id: String,
+    pub event_date: Option<String>,
+    pub event_type: String,
+}
+
+/// Dados de evento para geração de escala mensal
+#[derive(Debug, Clone)]
+pub struct EventMonthRow {
+    pub id: String,
+    pub name: String,
+    pub event_date: Option<String>,
+    pub event_type: String,
+    pub day_of_week: Option<i64>,
+    pub recurrence: Option<String>,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow)]
 pub struct ScheduleEntry {
     pub id: String,

@@ -150,3 +150,17 @@ export interface AppError {
   type: 'NotFound' | 'Validation' | 'Conflict' | 'Database' | 'Internal';
   message: string;
 }
+
+export interface ScheduleConfig {
+  apply_monthly_limit: boolean;
+  max_occurrences_per_month: number;
+  propagate_couples: boolean;
+  apply_history_scoring: boolean;
+}
+
+export interface UpdateScheduleConfigDto {
+  apply_monthly_limit: boolean;
+  max_occurrences_per_month: number;
+  propagate_couples: boolean;
+  apply_history_scoring: boolean;
+}

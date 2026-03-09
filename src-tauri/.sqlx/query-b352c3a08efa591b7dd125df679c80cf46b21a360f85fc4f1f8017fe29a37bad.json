@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "SELECT es.squad_id as \"squad_id!\", s.name as \"squad_name!\", es.min_members, es.max_members\n               FROM event_squads es\n               JOIN squads s ON s.id = es.squad_id\n               WHERE es.event_id = ?",
+  "query": "SELECT es.squad_id as \"squad_id!\", s.name as \"squad_name!\", es.min_members, es.max_members\n           FROM event_squads es\n           JOIN squads s ON s.id = es.squad_id\n           WHERE es.event_id = ?",
   "describe": {
     "columns": [
       {
@@ -34,5 +34,5 @@
       false
     ]
   },
-  "hash": "e2845aabfd2a9dec8e0b8897de60bce72d461039a4ce8066b7b1082cd4925595"
+  "hash": "b352c3a08efa591b7dd125df679c80cf46b21a360f85fc4f1f8017fe29a37bad"
 }

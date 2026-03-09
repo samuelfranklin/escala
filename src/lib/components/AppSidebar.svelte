@@ -11,6 +11,7 @@
 		{ href: '/schedule',     label: 'Escala',           icon: 'lucide:clipboard-list' },
 		{ href: '/availability', label: 'Disponibilidade',  icon: 'lucide:calendar-check' },
 		{ href: '/couples',      label: 'Casais',           icon: 'lucide:heart' },
+		{ href: '/settings',     label: 'Configurações',    icon: 'lucide:settings' },
 	];
 </script>
 
@@ -39,7 +40,7 @@
 						<Sidebar.MenuItem>
 							<Sidebar.MenuButton
 								isActive={$page.url.pathname.startsWith(item.href)}
-								tooltip={item.label}
+								tooltipContent={item.label}
 							>
 								{#snippet child({ props }: { props: Record<string, unknown> })}
 									<a href={item.href} {...props}>

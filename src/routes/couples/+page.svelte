@@ -29,7 +29,7 @@
 
 <div>
   <h1 class="text-2xl font-heading font-bold mb-2">Restrições de Casais</h1>
-  <p class="text-muted-foreground mb-6">Casais não são escalados juntos no mesmo evento.</p>
+  <p class="text-muted-foreground mb-6">Casais cadastrados são sempre escalados juntos no mesmo evento.</p>
 
   <div class="flex gap-3 mb-6 flex-wrap items-end">
     <div class="flex flex-col gap-1.5">

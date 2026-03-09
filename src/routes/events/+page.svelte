@@ -264,7 +264,7 @@
           }
         }}>
           <Select.Trigger>
-            {({'regular':'Regular (recorrente)', 'special':'Especial', 'training':'Treinamento'} as Record<string,string>)[form.event_type] ?? 'Tipo'}
+            {({'regular':'Regular (recorrente)', 'special':'Especial', 'training':'Treinamento'} as Record<string,string>)[form.event_type ?? ''] ?? 'Tipo'}
           </Select.Trigger>
           <Select.Content>
             <Select.Item value="regular">Regular (recorrente)</Select.Item>
