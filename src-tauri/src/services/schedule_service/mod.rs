@@ -23,7 +23,7 @@ use log::{info, debug, warn};
 use sqlx::SqlitePool;
 use std::collections::{HashMap, HashSet};
 
-use scoring::compute_score;
+use scoring::tiebreak_hash;
 use recurrence::occurrence_dates;
 
 // ── Leitura ──
@@ -87,11 +87,11 @@ pub async fn generate_schedule(pool: &SqlitePool, event_id: &str) -> Result<Sche
         let candidates = schedule_repo::fetch_squad_candidates(pool, &es.squad_id).await?;
 
         let ranked = allocation::rank_candidates(
-            &candidates, &unavailable, &historical_count_map, &days_idle_map, &monthly_count_map, &config,
+            &candidates, &unavailable, &historical_count_map, &days_idle_map, &monthly_count_map, &config, &event_date,
         );
-        log_candidate_scores(
+        log_candidate_ranking(
             &format!("[generate_schedule] Squad {} candidatos:", es.squad_id),
-            &ranked, &historical_count_map, &days_idle_map, &monthly_count_map, &config,
+            &ranked, &monthly_count_map, &days_idle_map, &historical_count_map, &event_date,
         );
 
         let allocated = allocation::allocate_top(&ranked, &globally_allocated, es.max_members as usize);
@@ -191,11 +191,11 @@ pub async fn generate_month_schedule(pool: &SqlitePool, month: &str) -> Result<M
                 .collect();
 
             let ranked = allocation::rank_candidates(
-                &candidates, &unavailable, &historical_count_map, &days_idle, &monthly_count_map, &config,
+                &candidates, &unavailable, &historical_count_map, &days_idle, &monthly_count_map, &config, occurrence_date,
             );
-            log_candidate_scores(
+            log_candidate_ranking(
                 &format!("[generate_month] {} em {} — Squad '{}' candidatos:", event_id, occurrence_date, es.squad_name),
-                &ranked, &historical_count_map, &days_idle, &monthly_count_map, &config,
+                &ranked, &monthly_count_map, &days_idle, &historical_count_map, occurrence_date,
             );
 
             let allocated = allocation::allocate_top(&ranked, &globally_allocated, es.max_members as usize);
@@ -274,27 +274,22 @@ fn log_monthly_blocked(monthly_counts: &HashMap<String, i64>, label: &str, date:
     }
 }
 
-fn log_candidate_scores(
+fn log_candidate_ranking(
     label: &str,
-    candidates: &[String],
-    historical_counts: &HashMap<String, i64>,
-    days_idle: &HashMap<String, i64>,
+    ranked: &[String],
     monthly_counts: &HashMap<String, i64>,
-    config: &ScheduleConfig,
+    days_idle: &HashMap<String, i64>,
+    historical_counts: &HashMap<String, i64>,
+    occurrence_date: &str,
 ) {
     debug!("{}", label);
-    for c in candidates {
-        let score = compute_score(
-            historical_counts.get(c).copied().unwrap_or(0),
-            days_idle.get(c).copied().unwrap_or(9999),
+    for (pos, c) in ranked.iter().enumerate() {
+        debug!("  #{} {} → mes={}, idle={}, hist={}, hash={}",
+            pos + 1, c,
             monthly_counts.get(c).copied().unwrap_or(0),
-            config,
-        );
-        debug!("  {} → score={:.2} (hist={}, idle={}, mes={})",
-            c, score,
-            historical_counts.get(c).copied().unwrap_or(0),
             days_idle.get(c).copied().unwrap_or(9999),
-            monthly_counts.get(c).copied().unwrap_or(0));
+            historical_counts.get(c).copied().unwrap_or(0),
+            tiebreak_hash(c, occurrence_date));
     }
 }
 

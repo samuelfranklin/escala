@@ -1,65 +1,131 @@
-use crate::models::settings::ScheduleConfig;
+use std::cmp::Ordering;
+use std::collections::hash_map::DefaultHasher;
+use std::hash::{Hash, Hasher};
 
-/// Score de prioridade multi-fator revisado.
+/// Prioridade de um candidato para alocação, usando comparação multi-chave
+/// explícita em vez de score float opaco.
 ///
-/// Penaliza severamente escalas sequenciais no mesmo mês, enquanto usa o histórico geral
-/// apenas como um peso leve de desempate para não esmagar membros ativos.
-/// Se `config.apply_history_scoring == false`, o peso do histórico é zerado.
-pub fn compute_score(count_historico: i64, days_idle: i64, vezes_no_mes: i64, config: &ScheduleConfig) -> f64 {
-    let base = (days_idle + 1) as f64;
-    let penalty_mes = (vezes_no_mes * 5 + 1) as f64;
-    let penalty_historico = if config.apply_history_scoring {
-        (count_historico as f64) * 0.1
-    } else {
-        0.0
-    };
+/// Critérios (em ordem de importância):
+/// 1. `times_this_month` ASC — quem serviu MENOS no mês tem prioridade
+/// 2. `days_idle` DESC — quem está parado há mais tempo tem prioridade
+/// 3. `historical_count` ASC — quem serviu MENOS no geral tem prioridade
+/// 4. `tiebreak` — hash determinístico baseado em (member_id + date)
+#[derive(Debug, Clone)]
+pub struct CandidatePriority {
+    pub times_this_month: i64,
+    pub days_idle: i64,
+    pub historical_count: i64,
+    pub use_history: bool,
+    pub tiebreak: u64,
+}
 
-    let score = (base / penalty_mes) - penalty_historico;
+impl CandidatePriority {
+    /// Compara dois candidatos. Ordering::Less = MAIOR prioridade (será selecionado primeiro).
+    pub fn cmp_priority(&self, other: &CandidatePriority) -> Ordering {
+        // 1. Menos vezes no mês → maior prioridade
+        self.times_this_month.cmp(&other.times_this_month)
+            // 2. Mais dias parado → maior prioridade (invertido)
+            .then(other.days_idle.cmp(&self.days_idle))
+            // 3. Menos histórico total → maior prioridade (se habilitado)
+            .then(if self.use_history {
+                self.historical_count.cmp(&other.historical_count)
+            } else {
+                Ordering::Equal
+            })
+            // 4. Hash tiebreak — distribui deterministicamente por data
+            .then(self.tiebreak.cmp(&other.tiebreak))
+    }
+}
 
-    if score < 0.0 { 0.0 } else { score }
+/// Gera um hash determinístico baseado em (member_id, occurrence_date).
+/// Garante distribuição variada entre datas sem depender da ordem de UUIDs.
+pub fn tiebreak_hash(member_id: &str, occurrence_date: &str) -> u64 {
+    let mut hasher = DefaultHasher::new();
+    member_id.hash(&mut hasher);
+    occurrence_date.hash(&mut hasher);
+    hasher.finish()
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    fn default_config() -> ScheduleConfig { ScheduleConfig::default() }
-
-    #[test]
-    fn never_scheduled_scores_highest() {
-        let score_never = compute_score(0, 9999, 0, &default_config());
-        let score_experienced = compute_score(1, 30, 0, &default_config());
-        assert!(score_never > score_experienced);
+    fn priority(month: i64, idle: i64, hist: i64, tb: u64) -> CandidatePriority {
+        CandidatePriority {
+            times_this_month: month,
+            days_idle: idle,
+            historical_count: hist,
+            use_history: true,
+            tiebreak: tb,
+        }
     }
 
     #[test]
-    fn monthly_penalty_reduces_score() {
-        let without = compute_score(0, 10, 0, &default_config());
-        let with_one = compute_score(0, 10, 1, &default_config());
-        let with_two = compute_score(0, 10, 2, &default_config());
-        assert!(without > with_one);
-        assert!(with_one > with_two);
+    fn fewer_times_this_month_wins() {
+        let a = priority(0, 10, 5, 0);
+        let b = priority(1, 10, 5, 0);
+        assert_eq!(a.cmp_priority(&b), Ordering::Less); // a tem prioridade
     }
 
     #[test]
-    fn historical_penalty_reduces_score() {
-        let few = compute_score(1, 30, 0, &default_config());
-        let many = compute_score(10, 30, 0, &default_config());
-        assert!(few > many);
+    fn more_idle_days_wins_when_month_equal() {
+        let a = priority(1, 30, 5, 0);
+        let b = priority(1, 7, 5, 0);
+        assert_eq!(a.cmp_priority(&b), Ordering::Less); // a parado há mais tempo
     }
 
     #[test]
-    fn score_never_negative() {
-        let score = compute_score(9999, 0, 9999, &default_config());
-        assert!(score >= 0.0);
+    fn fewer_historical_wins_when_month_and_idle_equal() {
+        let a = priority(1, 30, 2, 0);
+        let b = priority(1, 30, 10, 0);
+        assert_eq!(a.cmp_priority(&b), Ordering::Less); // a serviu menos no total
     }
 
     #[test]
-    fn history_scoring_disabled_ignores_historical_count() {
-        let mut config = default_config();
-        config.apply_history_scoring = false;
-        let score_low = compute_score(1, 30, 0, &config);
-        let score_high = compute_score(1000, 30, 0, &config);
-        assert_eq!(score_low, score_high); // histórico não afeta o score
+    fn tiebreak_hash_differentiates_equal_candidates() {
+        let a = priority(0, 9999, 0, 100);
+        let b = priority(0, 9999, 0, 200);
+        assert_eq!(a.cmp_priority(&b), Ordering::Less); // hash menor ganha
+    }
+
+    #[test]
+    fn month_count_dominates_over_idle() {
+        let a = priority(0, 1, 0, 0); // 0 vezes no mês, idle de 1 dia
+        let b = priority(1, 9999, 0, 0); // 1 vez no mês, idle de 9999 dias
+        assert_eq!(a.cmp_priority(&b), Ordering::Less); // a ganha por ter 0 vezes no mês
+    }
+
+    #[test]
+    fn history_disabled_ignores_historical_count() {
+        let a = CandidatePriority {
+            times_this_month: 0, days_idle: 30, historical_count: 100,
+            use_history: false, tiebreak: 50,
+        };
+        let b = CandidatePriority {
+            times_this_month: 0, days_idle: 30, historical_count: 1,
+            use_history: false, tiebreak: 50,
+        };
+        assert_eq!(a.cmp_priority(&b), Ordering::Equal); // histórico ignorado
+    }
+
+    #[test]
+    fn tiebreak_hash_varies_by_date() {
+        let h1 = tiebreak_hash("member-1", "2026-03-01");
+        let h2 = tiebreak_hash("member-1", "2026-03-08");
+        assert_ne!(h1, h2); // mesmo membro, datas diferentes → hash diferente
+    }
+
+    #[test]
+    fn tiebreak_hash_varies_by_member() {
+        let h1 = tiebreak_hash("member-1", "2026-03-01");
+        let h2 = tiebreak_hash("member-2", "2026-03-01");
+        assert_ne!(h1, h2); // membros diferentes, mesma data → hash diferente
+    }
+
+    #[test]
+    fn tiebreak_hash_is_deterministic() {
+        let h1 = tiebreak_hash("member-1", "2026-03-01");
+        let h2 = tiebreak_hash("member-1", "2026-03-01");
+        assert_eq!(h1, h2); // mesma entrada → mesmo resultado
     }
 }

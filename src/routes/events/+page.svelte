@@ -52,7 +52,7 @@
       const saved = squads.find(es => es.squad_id === sq.id);
       cfg[sq.id] = saved
         ? { enabled: true, min: saved.min_members, max: saved.max_members }
-        : { enabled: false, min: 1, max: 3 };
+        : { enabled: false, min: 1, max: 1 };
     }
     eventSquads = squads;
     squadConfig = cfg;

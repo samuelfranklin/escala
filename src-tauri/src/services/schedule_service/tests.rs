@@ -14,12 +14,30 @@ fn select_members(
     monthly_count_map: &HashMap<String, i64>,
     max: usize,
 ) -> Vec<String> {
+    select_members_for_date(
+        candidates, count_map, couple_map, globally_allocated,
+        unavailable, days_idle_map, monthly_count_map, max, "2026-03-01",
+    )
+}
+
+/// Versão com data parametrizável para testar hash tiebreak.
+fn select_members_for_date(
+    candidates: &[String],
+    count_map: &HashMap<String, i64>,
+    couple_map: &HashMap<String, HashSet<String>>,
+    globally_allocated: &HashSet<String>,
+    unavailable: &HashSet<String>,
+    days_idle_map: &HashMap<String, i64>,
+    monthly_count_map: &HashMap<String, i64>,
+    max: usize,
+    occurrence_date: &str,
+) -> Vec<String> {
     let config = ScheduleConfig::default();
     let effective_unavailable = constraints::build_unavailable(
         unavailable.clone(), monthly_count_map, couple_map, &config,
     );
     let ranked = allocation::rank_candidates(
-        candidates, &effective_unavailable, count_map, days_idle_map, monthly_count_map, &config,
+        candidates, &effective_unavailable, count_map, days_idle_map, monthly_count_map, &config, occurrence_date,
     );
     allocation::allocate_top(&ranked, globally_allocated, max)
 }
@@ -199,7 +217,8 @@ fn test_score_combined() {
     monthly.insert("m1".into(), 1i64); 
     monthly.insert("m3".into(), 1i64);
     let result = select_members(&candidates, &counts, &HashMap::new(), &HashSet::new(), &HashSet::new(), &idle, &monthly, 3);
-    assert_eq!(result, vec!["m1", "m2", "m3"]);
+    // Prioridade: mensal primeiro (m2=0 < m1=m3=1), depois idle (m1=100 > m3=5)
+    assert_eq!(result, vec!["m2", "m1", "m3"]);
 }
 
 // ── Regressão: idle não domina após primeira alocação ──
