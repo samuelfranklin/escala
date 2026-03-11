@@ -36,3 +36,7 @@ escala_debug.log
 
 # Tauri
 src-tauri/WixTools/
+
+# pnpm (project uses npm)
+pnpm-lock.yaml
+pnpm-workspace.yaml
