@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id as \"id!\", member_a_id as \"member_a_id!\", member_b_id as \"member_b_id!\", created_at as \"created_at!\" FROM couples ORDER BY created_at",
+  "describe": {
+    "columns": [
+      {
+        "name": "id!",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "member_a_id!",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "member_b_id!",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "created_at!",
+        "ordinal": 3,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 0
+    },
+    "nullable": [
+      true,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "8cd2c605afc631782d75b84e73d479076b7ca057b95c4588c1dbbe15a410f780"
+}

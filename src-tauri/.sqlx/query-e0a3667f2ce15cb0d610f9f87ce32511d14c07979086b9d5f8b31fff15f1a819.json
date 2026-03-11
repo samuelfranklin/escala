@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT member_id as \"member_id!\", COUNT(*) as \"cnt: i64\"\n           FROM schedule_entries WHERE occurrence_date NOT LIKE ? GROUP BY member_id",
+  "describe": {
+    "columns": [
+      {
+        "name": "member_id!",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "cnt: i64",
+        "ordinal": 1,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "e0a3667f2ce15cb0d610f9f87ce32511d14c07979086b9d5f8b31fff15f1a819"
+}

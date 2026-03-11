@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO availability (id, member_id, unavailable_date, reason) VALUES (?, ?, ?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "a22d6a66f1ffbbfad697e1780f5e4c131fa3f1eaa1f7f86023e00fe5d2aff1a5"
+}

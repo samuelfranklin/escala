@@ -1,0 +1,62 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT se.event_id as \"event_id!\", e.name as \"event_name!\",\n                  se.occurrence_date as \"occurrence_date!\",\n                  se.id as \"entry_id!\", se.squad_id as \"squad_id!\", s.name as \"squad_name!\",\n                  se.member_id as \"member_id!\", m.name as \"member_name!\"\n           FROM schedule_entries se\n           JOIN events e ON e.id = se.event_id\n           JOIN squads s ON s.id = se.squad_id\n           JOIN members m ON m.id = se.member_id\n           WHERE se.occurrence_date LIKE ?\n           ORDER BY se.occurrence_date, e.name, s.name, m.name",
+  "describe": {
+    "columns": [
+      {
+        "name": "event_id!",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "event_name!",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "occurrence_date!",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "entry_id!",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "squad_id!",
+        "ordinal": 4,
+        "type_info": "Text"
+      },
+      {
+        "name": "squad_name!",
+        "ordinal": 5,
+        "type_info": "Text"
+      },
+      {
+        "name": "member_id!",
+        "ordinal": 6,
+        "type_info": "Text"
+      },
+      {
+        "name": "member_name!",
+        "ordinal": 7,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      true,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "64964fd84935f000a65d96d062c0a66fc944ea41d667daea141eaf5911963a43"
+}

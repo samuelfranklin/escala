@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO members_squads (member_id, squad_id, role) VALUES (?, ?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "68b029a2ee97a773e5620dfc4345bbf33f864298f00c31783fc0312223bddff3"
+}

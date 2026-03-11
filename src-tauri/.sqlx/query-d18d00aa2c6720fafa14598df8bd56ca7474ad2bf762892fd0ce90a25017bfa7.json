@@ -1,0 +1,68 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id as \"id!\", name as \"name!\", email, phone, instagram, rank as \"rank!\",\n                  active as \"active: bool\", created_at as \"created_at!\", updated_at as \"updated_at!\"\n           FROM members WHERE id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "id!",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "name!",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "email",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "phone",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "instagram",
+        "ordinal": 4,
+        "type_info": "Text"
+      },
+      {
+        "name": "rank!",
+        "ordinal": 5,
+        "type_info": "Text"
+      },
+      {
+        "name": "active: bool",
+        "ordinal": 6,
+        "type_info": "Integer"
+      },
+      {
+        "name": "created_at!",
+        "ordinal": 7,
+        "type_info": "Text"
+      },
+      {
+        "name": "updated_at!",
+        "ordinal": 8,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      true,
+      false,
+      true,
+      true,
+      true,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "d18d00aa2c6720fafa14598df8bd56ca7474ad2bf762892fd0ce90a25017bfa7"
+}

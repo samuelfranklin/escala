@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO event_squads (event_id, squad_id, min_members, max_members) VALUES (?, ?, ?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "dfcc9101e14cd907826f8245657e1799539c65ff2006f7edd4d0f0d745d4bbc8"
+}

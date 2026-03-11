@@ -1,0 +1,38 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT es.squad_id as \"squad_id!\", s.name as \"squad_name!\", es.min_members, es.max_members\n           FROM event_squads es\n           JOIN squads s ON s.id = es.squad_id\n           WHERE es.event_id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "squad_id!",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "squad_name!",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "min_members",
+        "ordinal": 2,
+        "type_info": "Integer"
+      },
+      {
+        "name": "max_members",
+        "ordinal": 3,
+        "type_info": "Integer"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "b352c3a08efa591b7dd125df679c80cf46b21a360f85fc4f1f8017fe29a37bad"
+}

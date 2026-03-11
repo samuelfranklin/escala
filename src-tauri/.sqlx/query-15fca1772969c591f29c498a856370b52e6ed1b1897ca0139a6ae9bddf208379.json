@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT m.id as \"id!\" FROM members m\n           INNER JOIN members_squads ms ON ms.member_id = m.id\n           WHERE ms.squad_id = ? AND m.active = 1",
+  "describe": {
+    "columns": [
+      {
+        "name": "id!",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      true
+    ]
+  },
+  "hash": "15fca1772969c591f29c498a856370b52e6ed1b1897ca0139a6ae9bddf208379"
+}

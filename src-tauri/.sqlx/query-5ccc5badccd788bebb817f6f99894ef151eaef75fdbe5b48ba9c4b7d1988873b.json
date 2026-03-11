@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT member_id as \"member_id!\" FROM availability WHERE unavailable_date = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "member_id!",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "5ccc5badccd788bebb817f6f99894ef151eaef75fdbe5b48ba9c4b7d1988873b"
+}

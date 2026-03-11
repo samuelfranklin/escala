@@ -1,0 +1,52 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e3]:
+  - complementary [ref=e4]:
+    - generic [ref=e5]:
+      - generic [ref=e6]: 🎬
+      - generic [ref=e7]: Escala Mídia
+    - navigation "Navegação principal" [ref=e8]:
+      - link "Dashboard" [ref=e9] [cursor=pointer]:
+        - /url: /dashboard
+        - generic [ref=e10]: ◉
+        - generic [ref=e11]: Dashboard
+      - link "Membros" [ref=e12] [cursor=pointer]:
+        - /url: /members
+        - generic [ref=e13]: 👥
+        - generic [ref=e14]: Membros
+      - link "Times" [ref=e15] [cursor=pointer]:
+        - /url: /squads
+        - generic [ref=e16]: 🏷️
+        - generic [ref=e17]: Times
+      - link "Eventos" [ref=e18] [cursor=pointer]:
+        - /url: /events
+        - generic [ref=e19]: 📅
+        - generic [ref=e20]: Eventos
+      - link "Escala" [ref=e21] [cursor=pointer]:
+        - /url: /schedule
+        - generic [ref=e22]: 📋
+        - generic [ref=e23]: Escala
+      - link "Disponibilidade" [ref=e24] [cursor=pointer]:
+        - /url: /availability
+        - generic [ref=e25]: 🗓️
+        - generic [ref=e26]: Disponibilidade
+      - link "Casais" [ref=e27] [cursor=pointer]:
+        - /url: /couples
+        - generic [ref=e28]: 💑
+        - generic [ref=e29]: Casais
+  - main [ref=e30]:
+    - generic [ref=e32]:
+      - generic [ref=e33]:
+        - heading "Times" [level=1] [ref=e34]
+        - button "+ Novo Time" [active] [ref=e35] [cursor=pointer]
+      - paragraph [ref=e36]: Carregando...
+    - generic [ref=e38]:
+      - heading "Novo Time" [level=2] [ref=e39]
+      - generic [ref=e40]:
+        - generic [ref=e41]: Nome *
+        - textbox "Nome *" [ref=e42]
+      - generic [ref=e43]:
+        - button "Cancelar" [ref=e44] [cursor=pointer]
+        - button "Salvar" [ref=e45] [cursor=pointer]
+```

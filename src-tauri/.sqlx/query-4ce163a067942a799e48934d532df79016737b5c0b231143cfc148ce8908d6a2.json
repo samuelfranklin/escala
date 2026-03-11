@@ -1,0 +1,68 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT m.id as \"id!\", m.name as \"name!\", m.email, m.phone, m.instagram, m.rank as \"rank!\",\n                  m.active as \"active: bool\", m.created_at as \"created_at!\", m.updated_at as \"updated_at!\"\n           FROM members m\n           INNER JOIN members_squads ms ON ms.member_id = m.id\n           WHERE ms.squad_id = ? ORDER BY m.name",
+  "describe": {
+    "columns": [
+      {
+        "name": "id!",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "name!",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "email",
+        "ordinal": 2,
+        "type_info": "Text"
+      },
+      {
+        "name": "phone",
+        "ordinal": 3,
+        "type_info": "Text"
+      },
+      {
+        "name": "instagram",
+        "ordinal": 4,
+        "type_info": "Text"
+      },
+      {
+        "name": "rank!",
+        "ordinal": 5,
+        "type_info": "Text"
+      },
+      {
+        "name": "active: bool",
+        "ordinal": 6,
+        "type_info": "Integer"
+      },
+      {
+        "name": "created_at!",
+        "ordinal": 7,
+        "type_info": "Text"
+      },
+      {
+        "name": "updated_at!",
+        "ordinal": 8,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      true,
+      false,
+      true,
+      true,
+      true,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "4ce163a067942a799e48934d532df79016737b5c0b231143cfc148ce8908d6a2"
+}
