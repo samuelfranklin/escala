@@ -243,3 +243,304 @@ fn test_idle_does_not_dominate_second_event_after_first_allocation() {
     let round3 = select_members(&candidates, &counts, &HashMap::new(), &HashSet::new(), &HashSet::new(), &idle3, &monthly2, 1);
     assert_eq!(round3, vec!["m2"]);
 }
+
+// ── Integration tests with SQLite in-memory ──
+
+mod integration {
+    use crate::{
+        models::{
+            event::{CreateEventDto, EventSquadDto},
+            member::CreateMemberDto,
+            schedule::MonthScheduleView,
+        },
+        services::{
+            event_service, member_service, schedule_service, squad_service,
+            couple_service, availability_service, settings_service,
+        },
+        models::couple::CreateCoupleDto,
+        models::availability::CreateAvailabilityDto,
+        models::settings::UpdateScheduleConfigDto,
+        models::squad::CreateSquadDto,
+    };
+    use sqlx::SqlitePool;
+
+    async fn setup_pool() -> SqlitePool {
+        let pool = SqlitePool::connect(":memory:").await.unwrap();
+        sqlx::migrate!("./migrations").run(&pool).await.unwrap();
+        pool
+    }
+
+    async fn create_member(pool: &SqlitePool, name: &str) -> String {
+        member_service::create_member(pool, CreateMemberDto {
+            name: name.into(), email: None, phone: None, instagram: None, rank: None,
+        }).await.unwrap().id
+    }
+
+    async fn create_squad(pool: &SqlitePool, name: &str) -> String {
+        squad_service::create_squad(pool, CreateSquadDto {
+            name: name.into(), description: None,
+        }).await.unwrap().id
+    }
+
+    async fn create_regular_event(pool: &SqlitePool, name: &str, dow: i64, rec: &str) -> String {
+        event_service::create_event(pool, CreateEventDto {
+            name: name.into(), event_date: None, event_type: Some("regular".into()),
+            day_of_week: Some(dow), recurrence: Some(rec.into()), notes: None,
+        }).await.unwrap().id
+    }
+
+    async fn create_special_event(pool: &SqlitePool, name: &str, date: &str) -> String {
+        event_service::create_event(pool, CreateEventDto {
+            name: name.into(), event_date: Some(date.into()), event_type: Some("special".into()),
+            day_of_week: None, recurrence: None, notes: None,
+        }).await.unwrap().id
+    }
+
+    async fn setup_squad_with_members(pool: &SqlitePool, squad_name: &str, member_names: &[&str]) -> (String, Vec<String>) {
+        let squad_id = create_squad(pool, squad_name).await;
+        let mut member_ids = Vec::new();
+        for name in member_names {
+            let id = create_member(pool, name).await;
+            squad_service::add_member_to_squad(pool, &squad_id, &id, "member").await.unwrap();
+            member_ids.push(id);
+        }
+        (squad_id, member_ids)
+    }
+
+    // ── generate_schedule (single event) ──
+
+    #[tokio::test]
+    async fn test_generate_schedule_special_event() {
+        let pool = setup_pool().await;
+        let (squad_id, _members) = setup_squad_with_members(&pool, "Câmera", &["Alice", "Bob", "Carol"]).await;
+        let event_id = create_special_event(&pool, "Culto Especial", "2026-03-08").await;
+
+        event_service::set_event_squads(&pool, &event_id, vec![
+            EventSquadDto { squad_id, min_members: 1, max_members: 2 },
+        ]).await.unwrap();
+
+        let result = schedule_service::generate_schedule(&pool, &event_id).await.unwrap();
+        assert_eq!(result.event_id, event_id);
+        assert_eq!(result.entries.len(), 2);
+    }
+
+    #[tokio::test]
+    async fn test_generate_schedule_no_squads_fails() {
+        let pool = setup_pool().await;
+        let event_id = create_special_event(&pool, "Culto Vazio", "2026-03-08").await;
+        let err = schedule_service::generate_schedule(&pool, &event_id).await;
+        assert!(matches!(err, Err(crate::errors::AppError::Validation(_))));
+    }
+
+    #[tokio::test]
+    async fn test_generate_schedule_regular_event_fails() {
+        let pool = setup_pool().await;
+        let event_id = create_regular_event(&pool, "Culto Regular", 0, "weekly").await;
+        let err = schedule_service::generate_schedule(&pool, &event_id).await;
+        assert!(matches!(err, Err(crate::errors::AppError::Validation(_))));
+    }
+
+    #[tokio::test]
+    async fn test_generate_schedule_not_enough_members() {
+        let pool = setup_pool().await;
+        let (squad_id, _) = setup_squad_with_members(&pool, "Câmera", &["Alice"]).await;
+        let event_id = create_special_event(&pool, "Culto", "2026-03-08").await;
+
+        event_service::set_event_squads(&pool, &event_id, vec![
+            EventSquadDto { squad_id, min_members: 3, max_members: 3 },
+        ]).await.unwrap();
+
+        let err = schedule_service::generate_schedule(&pool, &event_id).await;
+        assert!(matches!(err, Err(crate::errors::AppError::Validation(_))));
+    }
+
+    #[tokio::test]
+    async fn test_generate_schedule_nonexistent_event() {
+        let pool = setup_pool().await;
+        let err = schedule_service::generate_schedule(&pool, "nonexistent").await;
+        assert!(matches!(err, Err(crate::errors::AppError::NotFound(_))));
+    }
+
+    // ── get_schedule / clear_schedule ──
+
+    #[tokio::test]
+    async fn test_get_and_clear_schedule() {
+        let pool = setup_pool().await;
+        let (squad_id, _) = setup_squad_with_members(&pool, "Câmera", &["Alice", "Bob"]).await;
+        let event_id = create_special_event(&pool, "Culto", "2026-03-08").await;
+
+        event_service::set_event_squads(&pool, &event_id, vec![
+            EventSquadDto { squad_id, min_members: 1, max_members: 1 },
+        ]).await.unwrap();
+
+        schedule_service::generate_schedule(&pool, &event_id).await.unwrap();
+
+        let view = schedule_service::get_schedule(&pool, &event_id).await.unwrap();
+        assert_eq!(view.entries.len(), 1);
+
+        schedule_service::clear_schedule(&pool, &event_id).await.unwrap();
+        let view = schedule_service::get_schedule(&pool, &event_id).await.unwrap();
+        assert!(view.entries.is_empty());
+    }
+
+    // ── generate_month_schedule ──
+
+    #[tokio::test]
+    async fn test_generate_month_schedule_regular_events() {
+        let pool = setup_pool().await;
+        let (squad_id, _) = setup_squad_with_members(
+            &pool, "Câmera", &["M1", "M2", "M3", "M4", "M5", "M6"],
+        ).await;
+
+        // Sunday weekly event (dow=0)
+        let event_id = create_regular_event(&pool, "Culto Domingo", 0, "weekly").await;
+        event_service::set_event_squads(&pool, &event_id, vec![
+            EventSquadDto { squad_id, min_members: 1, max_members: 1 },
+        ]).await.unwrap();
+
+        let result = schedule_service::generate_month_schedule(&pool, "2026-03").await.unwrap();
+        assert_eq!(result.month, "2026-03");
+        // March 2026 has 5 Sundays (1, 8, 15, 22, 29)
+        assert_eq!(result.occurrences.len(), 5);
+        for occ in &result.occurrences {
+            assert_eq!(occ.entries.len(), 1);
+        }
+    }
+
+    #[tokio::test]
+    async fn test_generate_month_schedule_special_event_included() {
+        let pool = setup_pool().await;
+        let (squad_id, _) = setup_squad_with_members(&pool, "Câmera", &["Alice", "Bob"]).await;
+
+        let event_id = create_special_event(&pool, "Congresso", "2026-04-10").await;
+        event_service::set_event_squads(&pool, &event_id, vec![
+            EventSquadDto { squad_id, min_members: 1, max_members: 1 },
+        ]).await.unwrap();
+
+        let result = schedule_service::generate_month_schedule(&pool, "2026-04").await.unwrap();
+        assert_eq!(result.occurrences.len(), 1);
+        assert_eq!(result.occurrences[0].occurrence_date, "2026-04-10");
+    }
+
+    #[tokio::test]
+    async fn test_generate_month_schedule_empty_month() {
+        let pool = setup_pool().await;
+        let result = schedule_service::generate_month_schedule(&pool, "2026-06").await.unwrap();
+        assert!(result.occurrences.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_get_and_clear_month_schedule() {
+        let pool = setup_pool().await;
+        let (squad_id, _) = setup_squad_with_members(&pool, "Câmera", &["Alice", "Bob"]).await;
+
+        let event_id = create_special_event(&pool, "Congresso", "2026-05-10").await;
+        event_service::set_event_squads(&pool, &event_id, vec![
+            EventSquadDto { squad_id, min_members: 1, max_members: 1 },
+        ]).await.unwrap();
+
+        schedule_service::generate_month_schedule(&pool, "2026-05").await.unwrap();
+
+        let view = schedule_service::get_month_schedule(&pool, "2026-05").await.unwrap();
+        assert_eq!(view.occurrences.len(), 1);
+
+        schedule_service::clear_month_schedule(&pool, "2026-05").await.unwrap();
+        let view = schedule_service::get_month_schedule(&pool, "2026-05").await.unwrap();
+        assert!(view.occurrences.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_parse_month_invalid_format() {
+        let pool = setup_pool().await;
+        let err = schedule_service::generate_month_schedule(&pool, "invalid").await;
+        assert!(matches!(err, Err(crate::errors::AppError::Validation(_))));
+    }
+
+    #[tokio::test]
+    async fn test_generate_month_with_availability_constraint() {
+        let pool = setup_pool().await;
+        let (squad_id, members) = setup_squad_with_members(&pool, "Câmera", &["Alice", "Bob"]).await;
+
+        let event_id = create_special_event(&pool, "Culto", "2026-07-10").await;
+        event_service::set_event_squads(&pool, &event_id, vec![
+            EventSquadDto { squad_id, min_members: 1, max_members: 1 },
+        ]).await.unwrap();
+
+        // Mark Alice unavailable on that date
+        availability_service::create_availability(&pool, CreateAvailabilityDto {
+            member_id: members[0].clone(), unavailable_date: "2026-07-10".into(), reason: None,
+        }).await.unwrap();
+
+        let result = schedule_service::generate_month_schedule(&pool, "2026-07").await.unwrap();
+        assert_eq!(result.occurrences.len(), 1);
+        // Should be Bob since Alice is unavailable
+        assert_eq!(result.occurrences[0].entries[0].member_name, "Bob");
+    }
+
+    #[tokio::test]
+    async fn test_generate_schedule_with_two_squads() {
+        let pool = setup_pool().await;
+        let (sq1, _) = setup_squad_with_members(&pool, "Câmera", &["Alice", "Bob"]).await;
+        let (sq2, _) = setup_squad_with_members(&pool, "Som", &["Carol", "Dave"]).await;
+
+        let event_id = create_special_event(&pool, "Culto", "2026-08-01").await;
+        event_service::set_event_squads(&pool, &event_id, vec![
+            EventSquadDto { squad_id: sq1, min_members: 1, max_members: 1 },
+            EventSquadDto { squad_id: sq2, min_members: 1, max_members: 1 },
+        ]).await.unwrap();
+
+        let result = schedule_service::generate_schedule(&pool, &event_id).await.unwrap();
+        assert_eq!(result.entries.len(), 2);
+    }
+
+    #[tokio::test]
+    async fn test_generate_month_skips_event_without_squads() {
+        let pool = setup_pool().await;
+        // Event with no squads configured → should be skipped
+        create_special_event(&pool, "Vazio", "2026-09-01").await;
+
+        let result = schedule_service::generate_month_schedule(&pool, "2026-09").await.unwrap();
+        // No failures — just empty because the only event has no squads
+        assert!(result.occurrences.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_generate_month_with_biweekly_event() {
+        let pool = setup_pool().await;
+        let (squad_id, _) = setup_squad_with_members(&pool, "Câmera", &["A", "B", "C", "D"]).await;
+
+        // Wednesday biweekly (dow=3)
+        let event_id = create_regular_event(&pool, "Célula", 3, "biweekly").await;
+        event_service::set_event_squads(&pool, &event_id, vec![
+            EventSquadDto { squad_id, min_members: 1, max_members: 1 },
+        ]).await.unwrap();
+
+        let result = schedule_service::generate_month_schedule(&pool, "2026-03").await.unwrap();
+        // March 2026 Wednesdays: 4, 11, 18, 25 → biweekly = 4, 18 (2 occurrences)
+        assert_eq!(result.occurrences.len(), 2);
+    }
+
+    // ── Error types coverage ──
+
+    #[tokio::test]
+    async fn test_error_display() {
+        use crate::errors::AppError;
+        let err = AppError::NotFound("test".into());
+        assert_eq!(format!("{}", err), "Not found: test");
+        let err = AppError::Validation("bad".into());
+        assert_eq!(format!("{}", err), "Validation error: bad");
+        let err = AppError::Conflict("dup".into());
+        assert_eq!(format!("{}", err), "Conflict: dup");
+        let err = AppError::Database("db".into());
+        assert_eq!(format!("{}", err), "Database error: db");
+        let err = AppError::Internal("oops".into());
+        assert_eq!(format!("{}", err), "Internal error: oops");
+    }
+
+    #[tokio::test]
+    async fn test_sqlx_error_conversion() {
+        use crate::errors::AppError;
+        let err: AppError = sqlx::Error::RowNotFound.into();
+        assert!(matches!(err, AppError::NotFound(_)));
+    }
+}

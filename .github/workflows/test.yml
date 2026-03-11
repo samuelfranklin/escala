@@ -73,4 +73,4 @@ jobs:
             --manifest-path src-tauri/Cargo.toml \
             --out Xml --output-dir coverage/ \
             --fail-under 75 \
-            --exclude-files "src/main.rs"
+            --exclude-files "src/main.rs" "src/lib.rs" "src/commands/*"

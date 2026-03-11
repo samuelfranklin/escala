@@ -150,4 +150,115 @@ mod tests {
         ]).await;
         assert!(matches!(err, Err(AppError::Validation(_))));
     }
+
+    #[tokio::test]
+    async fn test_set_event_squads_validates_max_gt_10() {
+        let pool = setup_pool().await;
+        let event = create_test_event(&pool).await;
+        let squad_id = create_test_squad(&pool, "Câmera").await;
+
+        let err = set_event_squads(&pool, &event.id, vec![
+            EventSquadDto { squad_id, min_members: 1, max_members: 11 },
+        ]).await;
+        assert!(matches!(err, Err(AppError::Validation(_))));
+    }
+
+    #[tokio::test]
+    async fn test_crud_full_cycle() {
+        let pool = setup_pool().await;
+
+        // Create regular
+        let event = create_event(&pool, CreateEventDto {
+            name: "Culto Domingo".into(), event_date: None,
+            event_type: Some("regular".into()),
+            day_of_week: Some(0), recurrence: Some("weekly".into()), notes: None,
+        }).await.unwrap();
+        assert_eq!(event.name, "Culto Domingo");
+        assert_eq!(event.event_type, "regular");
+
+        // List
+        let all = list_events(&pool).await.unwrap();
+        assert_eq!(all.len(), 1);
+
+        // Get
+        let fetched = get_event(&pool, &event.id).await.unwrap();
+        assert_eq!(fetched.id, event.id);
+
+        // Update
+        let updated = update_event(&pool, &event.id, UpdateEventDto {
+            name: Some("Culto Atualizado".into()), event_date: None,
+            event_type: None, day_of_week: None, recurrence: None, notes: Some("nota".into()),
+        }).await.unwrap();
+        assert_eq!(updated.name, "Culto Atualizado");
+
+        // Update empty name fails
+        let err = update_event(&pool, &event.id, UpdateEventDto {
+            name: Some("  ".into()), event_date: None,
+            event_type: None, day_of_week: None, recurrence: None, notes: None,
+        }).await;
+        assert!(matches!(err, Err(AppError::Validation(_))));
+
+        // Delete
+        delete_event(&pool, &event.id).await.unwrap();
+        assert!(list_events(&pool).await.unwrap().is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_create_empty_name_fails() {
+        let pool = setup_pool().await;
+        let err = create_event(&pool, CreateEventDto {
+            name: "  ".into(), event_date: None,
+            event_type: Some("regular".into()),
+            day_of_week: Some(0), recurrence: Some("weekly".into()), notes: None,
+        }).await;
+        assert!(matches!(err, Err(AppError::Validation(_))));
+    }
+
+    #[tokio::test]
+    async fn test_create_regular_without_day_of_week_fails() {
+        let pool = setup_pool().await;
+        let err = create_event(&pool, CreateEventDto {
+            name: "Culto".into(), event_date: None,
+            event_type: Some("regular".into()),
+            day_of_week: None, recurrence: Some("weekly".into()), notes: None,
+        }).await;
+        assert!(matches!(err, Err(AppError::Validation(_))));
+    }
+
+    #[tokio::test]
+    async fn test_create_regular_without_recurrence_fails() {
+        let pool = setup_pool().await;
+        let err = create_event(&pool, CreateEventDto {
+            name: "Culto".into(), event_date: None,
+            event_type: Some("regular".into()),
+            day_of_week: Some(0), recurrence: None, notes: None,
+        }).await;
+        assert!(matches!(err, Err(AppError::Validation(_))));
+    }
+
+    #[tokio::test]
+    async fn test_create_special_without_date_fails() {
+        let pool = setup_pool().await;
+        let err = create_event(&pool, CreateEventDto {
+            name: "Congresso".into(), event_date: None,
+            event_type: Some("special".into()),
+            day_of_week: None, recurrence: None, notes: None,
+        }).await;
+        assert!(matches!(err, Err(AppError::Validation(_))));
+    }
+
+    #[tokio::test]
+    async fn test_delete_nonexistent_event() {
+        let pool = setup_pool().await;
+        let err = delete_event(&pool, "nonexistent").await;
+        assert!(matches!(err, Err(AppError::NotFound(_))));
+    }
+
+    #[tokio::test]
+    async fn test_get_event_squads_empty() {
+        let pool = setup_pool().await;
+        let event = create_test_event(&pool).await;
+        let squads = get_event_squads(&pool, &event.id).await.unwrap();
+        assert!(squads.is_empty());
+    }
 }

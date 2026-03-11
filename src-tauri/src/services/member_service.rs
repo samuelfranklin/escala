@@ -84,4 +84,71 @@ mod tests {
         let result = create_member(&pool, dto).await;
         assert!(matches!(result, Err(AppError::Validation(_))));
     }
+
+    async fn setup_pool() -> sqlx::SqlitePool {
+        let pool = sqlx::SqlitePool::connect(":memory:").await.unwrap();
+        sqlx::migrate!("./migrations").run(&pool).await.unwrap();
+        pool
+    }
+
+    #[tokio::test]
+    async fn test_crud_full_cycle() {
+        let pool = setup_pool().await;
+        // Create
+        let member = create_member(&pool, CreateMemberDto {
+            name: "Alice".into(), email: Some("alice@test.com".into()),
+            phone: Some("123".into()), instagram: None, rank: None,
+        }).await.unwrap();
+        assert_eq!(member.name, "Alice");
+        assert_eq!(member.email.as_deref(), Some("alice@test.com"));
+
+        // List
+        let all = list_members(&pool).await.unwrap();
+        assert_eq!(all.len(), 1);
+
+        // Get
+        let fetched = get_member(&pool, &member.id).await.unwrap();
+        assert_eq!(fetched.id, member.id);
+
+        // Update
+        let updated = update_member(&pool, &member.id, UpdateMemberDto {
+            name: Some("Alice Updated".into()), email: None,
+            phone: None, instagram: None, rank: None, active: Some(false),
+        }).await.unwrap();
+        assert_eq!(updated.name, "Alice Updated");
+        assert!(!updated.active);
+
+        // Update with empty name should fail
+        let err = update_member(&pool, &member.id, UpdateMemberDto {
+            name: Some("  ".into()), email: None,
+            phone: None, instagram: None, rank: None, active: None,
+        }).await;
+        assert!(matches!(err, Err(AppError::Validation(_))));
+
+        // Update with invalid email should fail
+        let err = update_member(&pool, &member.id, UpdateMemberDto {
+            name: None, email: Some("bad".into()),
+            phone: None, instagram: None, rank: None, active: None,
+        }).await;
+        assert!(matches!(err, Err(AppError::Validation(_))));
+
+        // Delete
+        delete_member(&pool, &member.id).await.unwrap();
+        let all = list_members(&pool).await.unwrap();
+        assert!(all.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_get_nonexistent_returns_not_found() {
+        let pool = setup_pool().await;
+        let result = get_member(&pool, "nonexistent").await;
+        assert!(matches!(result, Err(AppError::NotFound(_))));
+    }
+
+    #[tokio::test]
+    async fn test_delete_nonexistent_returns_not_found() {
+        let pool = setup_pool().await;
+        let result = delete_member(&pool, "nonexistent").await;
+        assert!(matches!(result, Err(AppError::NotFound(_))));
+    }
 }
