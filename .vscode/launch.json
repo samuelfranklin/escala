@@ -1,0 +1,33 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug Testes (cargo test)",
+      "cargo": {
+        "args": ["test", "--no-run", "--lib", "--package=escala-midia"],
+        "filter": {
+          "kind": "lib"
+        }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}/src-tauri",
+      "env": {
+        "SQLX_OFFLINE": "true"
+      }
+    },
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug App (tauri)",
+      "cargo": {
+        "args": ["build", "--package=escala-midia"],
+        "filter": {
+          "kind": "bin"
+        }
+      },
+      "cwd": "${workspaceFolder}/src-tauri"
+    }
+  ]
+}
