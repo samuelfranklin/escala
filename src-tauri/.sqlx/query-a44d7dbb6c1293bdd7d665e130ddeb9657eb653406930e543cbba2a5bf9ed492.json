@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "UPDATE schedule_config\n           SET apply_monthly_limit = ?,\n               max_occurrences_per_month = ?,\n               propagate_couples = ?,\n               apply_history_scoring = ?\n           WHERE id = 1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "a44d7dbb6c1293bdd7d665e130ddeb9657eb653406930e543cbba2a5bf9ed492"
+}

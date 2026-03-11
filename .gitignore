@@ -1,53 +1,45 @@
-# Ambiente virtual
-.venv/
-venv/
-env/
-
-# Banco de dados
-*.db
-*.sqlite
-*.sqlite3
-
-# Logs e debug
-*.log
-escala_debug.log
-output.log
-
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-*.egg-info/
-.installed.cfg
-*.egg
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
 .DS_Store
-
-# Arquivos de backup e dados locais
-backup_*.db
-.ENV
+node_modules
+/build
+/.svelte-kit
+/package
 .env
+.env.*
+!.env.example
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
 
-# Sistema operacional
-Thumbs.db
-.nfs*
+# Python venv (legacy, não faz parte do projeto Tauri)
+.venv/
+*.pyc
+__pycache__/
+docs/__pycache__/
+
+# Env files com secrets
+.ENV
+.env.local
+
+# Rust / Cargo
+src-tauri/target/
+target/
+
+# SQLite database files
+*.db
+*.db-shm
+*.db-wal
+backup_*.db
+
+# Playwright test artifacts
+test-results/
+playwright-report/
+escala_debug.log
+
+# Tauri
+src-tauri/WixTools/
+
+# pnpm (project uses npm)
+pnpm-lock.yaml
+pnpm-workspace.yaml
+
+# Generated CSV exports
+*.csv

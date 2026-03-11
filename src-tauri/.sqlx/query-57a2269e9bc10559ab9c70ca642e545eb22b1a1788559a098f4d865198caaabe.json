@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT INTO couples (id, member_a_id, member_b_id) VALUES (?, ?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 3
+    },
+    "nullable": []
+  },
+  "hash": "57a2269e9bc10559ab9c70ca642e545eb22b1a1788559a098f4d865198caaabe"
+}

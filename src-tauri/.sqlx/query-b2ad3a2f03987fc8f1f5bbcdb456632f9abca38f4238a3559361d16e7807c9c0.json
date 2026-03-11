@@ -1,0 +1,32 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT id as \"id!\", event_date, event_type as \"event_type!\" FROM events WHERE id = ?",
+  "describe": {
+    "columns": [
+      {
+        "name": "id!",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "event_date",
+        "ordinal": 1,
+        "type_info": "Text"
+      },
+      {
+        "name": "event_type!",
+        "ordinal": 2,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "b2ad3a2f03987fc8f1f5bbcdb456632f9abca38f4238a3559361d16e7807c9c0"
+}

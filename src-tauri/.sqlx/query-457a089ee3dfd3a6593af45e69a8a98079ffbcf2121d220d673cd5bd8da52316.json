@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "INSERT OR IGNORE INTO schedule_entries (id, event_id, squad_id, member_id) VALUES (?, ?, ?, ?)",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 4
+    },
+    "nullable": []
+  },
+  "hash": "457a089ee3dfd3a6593af45e69a8a98079ffbcf2121d220d673cd5bd8da52316"
+}

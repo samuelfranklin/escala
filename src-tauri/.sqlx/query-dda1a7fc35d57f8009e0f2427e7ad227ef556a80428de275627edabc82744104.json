@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "SELECT member_id as \"member_id!\", MAX(occurrence_date) as \"last_date!\"\n           FROM schedule_entries WHERE occurrence_date < ? GROUP BY member_id",
+  "describe": {
+    "columns": [
+      {
+        "name": "member_id!",
+        "ordinal": 0,
+        "type_info": "Text"
+      },
+      {
+        "name": "last_date!",
+        "ordinal": 1,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      true,
+      true
+    ]
+  },
+  "hash": "dda1a7fc35d57f8009e0f2427e7ad227ef556a80428de275627edabc82744104"
+}
